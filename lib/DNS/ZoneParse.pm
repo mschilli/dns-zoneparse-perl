@@ -1,7 +1,7 @@
 # DNS::ZoneParse
 # Parse and Manipulate DNS Zonefiles
 # Version 0.95
-# CVS: $Id: ZoneParse.pm,v 1.2 2008-11-14 16:47:45 mschilli Exp $
+# CVS: $Id: ZoneParse.pm,v 1.3 2008-11-14 16:54:04 mschilli Exp $
 package DNS::ZoneParse;
 
 use 5.005;
@@ -468,11 +468,13 @@ current serial number.
 
 Examples:
 
-    $zonefile->new_serial();    # generates a new serial number based on date:
-                               # YYYYmmddHH format, incriments current serial
-                               # by 1 if the new serial is still smaller
+    $zonefile->new_serial(); 
+            # generates a new serial number based on date:
+            # YYYYmmddHH format, incriments current serial
+            # by 1 if the new serial is still smaller
 
-    $zonefile->new_serial(50);  # adds 50 to the original serial number
+    $zonefile->new_serial(50);  
+            # adds 50 to the original serial number
 
 =item output
 
@@ -554,6 +556,11 @@ Net::DNS::ZoneParser, Net::DNS::ZoneFile, DNS::ZoneFile
 =head1 AUTHOR
 
 Simon Flack
+
+=head1 MAINTENANCE
+
+    Mike Schilli, m@perlmeister.com
+    Bug queue: http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
 
 =head1 LICENSE
 
