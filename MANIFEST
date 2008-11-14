@@ -1,0 +1,9 @@
+Changes
+Makefile.PL
+MANIFEST
+MANIFEST.SKIP
+t/dns-zoneparse.t
+t/test-zone.db
+lib/DNS/ZoneParse.pm
+README
+META.yml                                 Module meta-data (added by MakeMaker)
