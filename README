@@ -96,11 +96,13 @@ DESCRIPTION
 
         Examples:
 
-            $zonefile->new_serial();    # generates a new serial number based on date:
-                                       # YYYYmmddHH format, incriments current serial
-                                       # by 1 if the new serial is still smaller
+            $zonefile->new_serial(); 
+                    # generates a new serial number based on date:
+                    # YYYYmmddHH format, incriments current serial
+                    # by 1 if the new serial is still smaller
 
-            $zonefile->new_serial(50);  # adds 50 to the original serial number
+            $zonefile->new_serial(50);  
+                    # adds 50 to the original serial number
 
     output
         "output()" returns the new zonefile output as a string. If you wish
@@ -171,6 +173,10 @@ SEE ALSO
 
 AUTHOR
     Simon Flack
+
+MAINTENANCE
+        Mike Schilli, m@perlmeister.com
+        Bug queue: http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
 
 LICENSE
     DNS::ZoneParse is free software which you can redistribute and/or modify

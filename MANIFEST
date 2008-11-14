@@ -3,7 +3,6 @@ Changes
 lib/DNS/ZoneParse.pm
 Makefile.PL
 MANIFEST
-MANIFEST.bak
 MANIFEST.SKIP
 META.yml			Module meta-data (added by MakeMaker)
 README
