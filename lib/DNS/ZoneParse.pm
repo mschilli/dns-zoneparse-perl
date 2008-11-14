@@ -1,7 +1,7 @@
 # DNS::ZoneParse
 # Parse and Manipulate DNS Zonefiles
 # Version 0.95
-# CVS: $Id: ZoneParse.pm,v 1.3 2008-11-14 16:54:04 mschilli Exp $
+# CVS: $Id: ZoneParse.pm,v 1.4 2008-11-14 16:59:51 mikeschilli Exp $
 package DNS::ZoneParse;
 
 use 5.005;
@@ -559,8 +559,8 @@ Simon Flack
 
 =head1 MAINTENANCE
 
-    Mike Schilli, m@perlmeister.com
-    Bug queue: http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
+Maintainer: Mike Schilli, m@perlmeister.com,
+Bug queue: http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
 
 =head1 LICENSE
 

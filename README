@@ -175,8 +175,8 @@ AUTHOR
     Simon Flack
 
 MAINTENANCE
-        Mike Schilli, m@perlmeister.com
-        Bug queue: http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
+    Maintainer: Mike Schilli, m@perlmeister.com, Bug queue:
+    http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
 
 LICENSE
     DNS::ZoneParse is free software which you can redistribute and/or modify
