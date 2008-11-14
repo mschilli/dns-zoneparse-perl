@@ -1,7 +1,7 @@
 # DNS::ZoneParse
 # Parse and Manipulate DNS Zonefiles
 # Version 0.95
-# CVS: $Id: ZoneParse.pm,v 1.1 2008-11-14 16:36:17 mschilli Exp $
+# CVS: $Id: ZoneParse.pm,v 1.2 2008-11-14 16:47:45 mschilli Exp $
 package DNS::ZoneParse;
 
 use 5.005;
@@ -11,9 +11,9 @@ use vars qw($VERSION);
 use strict;
 use Carp;
 
-$VERSION = '0.95';
+$VERSION = '0.96';
 my (%dns_id, %dns_soa, %dns_ns, %dns_a, %dns_cname, %dns_mx,
-    %dns_txt, %dns_ptr, %dns_a4, %dns_last_name);
+    %dns_txt, %dns_ptr, %dns_a4, %dns_srv, %dns_last_name);
 
 sub new {
     my $class = shift;
@@ -30,6 +30,7 @@ sub DESTROY {
     delete $dns_a     {$self};    delete $dns_cname {$self};
     delete $dns_mx    {$self};    delete $dns_txt   {$self};
     delete $dns_ptr   {$self};    delete $dns_a4    {$self};
+    delete $dns_srv   {$self};
     delete $dns_id    {$self};    delete $dns_last_name {$self};
 }
 
@@ -45,6 +46,7 @@ sub AUTOLOAD {
            : $method eq 'txt'      ? $dns_txt   {$self}
            : $method eq 'ptr'      ? $dns_ptr   {$self}
            : $method eq 'aaaa'     ? $dns_a4    {$self}
+           : $method eq 'srv'      ? $dns_srv   {$self}
            : $method eq 'zonefile' ? $dns_id    {$self}->{ZoneFile}
            : $method eq 'origin'   ? $dns_id    {$self}->{Origin}
            : undef;
@@ -65,6 +67,7 @@ sub dump {
                    A     => $dns_a     {$self}, NS    => $dns_ns  {$self},
                    CNAME => $dns_cname {$self}, MX    => $dns_mx  {$self},
                    PTR   => $dns_ptr   {$self}, TXT   => $dns_txt {$self},
+                   SRV   => $dns_srv   {$self},
                   });
 }
 
@@ -84,7 +87,7 @@ sub new_serial {
 
 sub output {
     my $self = shift;
-    my @quick_classes = qw(A AAAA CNAME PTR);
+    my @quick_classes = qw(A AAAA CNAME PTR SRV);
     my $zone_ttl = $dns_soa{$self}{ttl} ? "\$TTL $dns_soa{$self}{ttl}" : '';
     my $output = "";
     $output .= <<ZONEHEADER;
@@ -140,6 +143,11 @@ ZONEHEADER
         next unless defined;
         $output .= "$_->{name}	$_->{ttl}	$_->{class}	PTR		$_->{host}\n";
     }
+    foreach (@{$dns_srv{$self}}) {
+        next unless defined;
+        $output .= "$_->{name}	$_->{ttl}	$_->{class}	SRV	$_->{priority}	" .
+		    "$_->{weight}	$_->{port}	$_->{host}\n";
+    }
     return $output;
 }
 
@@ -154,7 +162,8 @@ sub _initialize {
     $dns_ns    {$self} = [];    $dns_a     {$self} = [];
     $dns_cname {$self} = [];    $dns_mx    {$self} = [];
     $dns_txt   {$self} = [];    $dns_ptr   {$self} = [];
-    $dns_a4    {$self} = [];    $dns_last_name{$self} = '@';
+    $dns_a4    {$self} = [];    $dns_srv   {$self} = [];
+    $dns_last_name{$self} = '@';
     return 1;
 }
 
@@ -233,6 +242,24 @@ sub _parse {
              my ($name, $ttl, $class, $pri, $host) = ($1, $2, $3, $4, $5);
              push @{$dns_mx{$self}},
                   $self -> _massage({ name => $name, priority => $pri,
+                                      host => $host, ttl => $ttl,
+                                      class => $class})
+        }
+        elsif (/^($valid_name)? \s*
+                 $ttl_cls
+                 SRV \s
+                 (\d+) \s
+                 (\d+) \s
+                 (\d+) \s
+                 ($valid_name)
+               /ix)
+        {
+              # host ttl class mx priority weight port dest
+             my ($name, $ttl, $class, $pri, $weight, $port, $host) = 
+			     ($1, $2, $3, $4, $5, $6, $7);
+             push @{$dns_srv{$self}},
+                  $self -> _massage({ name => $name, priority => $pri,
+                                      weight => $weight, port => $port,
                                       host => $host, ttl => $ttl,
                                       class => $class})
         }
@@ -406,7 +433,7 @@ C<$origin> if none can be found in the zone file.
 
     my $zonefile = DNS::ZoneParse->new( \$zone_contents, $origin );
 
-=item a(), cname(), mx(), ns(), ptr()
+=item a(), cname(), srv(), mx(), ns(), ptr()
 
 These methods return references to the resource records. For example:
 
@@ -414,10 +441,12 @@ These methods return references to the resource records. For example:
 
 Returns the mx records in an array reference.
 
-A, CNAME, NS, MX and PTR records have the following properties:
+A, CNAME, NS, MX, PTR, and SRV records have the following properties:
 'ttl', 'class', 'host', 'name'
 
 MX records also have a 'priority' property.
+
+SRV records also have 'priority', 'weight' and 'port' properties
 
 =item soa()
 

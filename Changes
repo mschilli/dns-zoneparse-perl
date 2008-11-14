@@ -1,5 +1,10 @@
 Revision history for Perl extension DNS::ZoneParse.
 
+0.96 - Fri Nov 14 2008
+      - (ms) Obtained co-maintainership to apply overdue patches
+      - (ms) Applied SRV patch by Andrew Fresh: 
+             http://rt.cpan.org/Public/Bug/Display.html?id=24402
+
 0.95 - Sun Oct 24 2004
       - suppress $TTL directive in output() if the zone has no TTL defined
       - fix bug #7845 - zonefile and origin lost during parse.
@@ -106,3 +111,5 @@ Revision history for Perl extension DNS::ZoneParse.
 
 0.01  Wed Mar  7 13:46:49 2001
       - original version; created by h2xs 1.20
+
+# vim:filetype=perl
