@@ -1,7 +1,3 @@
-######################################################################
-    DNS::ZoneParse 0.96
-######################################################################
-
 NAME
     DNS::ZoneParse - Parse and manipulate DNS Zone Files.
 
@@ -40,11 +36,11 @@ INSTALLATION
 DESCRIPTION
     This module will parse a Zone File and put all the Resource Records
     (RRs) into an anonymous hash structure. At the moment, the following
-    types of RRs are supported: SOA, NS, MX, A, CNAME, TXT, PTR. It could be
-    useful for maintaining DNS zones, or for transferring DNS zones to other
-    servers. If you want to generate an XML-friendly version of your zone
-    files, it is easy to use XML::Simple with this module once you have
-    parsed the zonefile.
+    types of RRs are supported: SOA, NS, MX, A, CNAME, TXT, PTR, HINFO, and
+    RP. It could be useful for maintaining DNS zones, or for transferring
+    DNS zones to other servers. If you want to generate an XML-friendly
+    version of your zone files, it is easy to use XML::Simple with this
+    module once you have parsed the zonefile.
 
     DNS::ZoneParse scans the DNS zonefile - removes comments and seperates
     the file into its constituent records. It then parses each record and
@@ -64,7 +60,7 @@ DESCRIPTION
 
             my $zonefile = DNS::ZoneParse->new( \$zone_contents, $origin );
 
-    a(), cname(), srv(), mx(), ns(), ptr()
+    a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp()
         These methods return references to the resource records. For
         example:
 
@@ -72,12 +68,20 @@ DESCRIPTION
 
         Returns the mx records in an array reference.
 
-        A, CNAME, NS, MX, PTR, and SRV records have the following
-        properties: 'ttl', 'class', 'host', 'name'
+        A, CNAME, NS, MX, PTR, SRV, TXT, HINFO, and RP records have the
+        following properties: 'ttl', 'class', 'host', 'name'.
 
         MX records also have a 'priority' property.
 
-        SRV records also have 'priority', 'weight' and 'port' properties
+        SRV records also have 'priority', 'weight' and 'port' properties.
+
+        TXT records also have a 'txt' property. Note: In the past, before
+        this call was documented, this additional property was known as
+        'text'.
+
+        HINFO records also have 'cpu' and 'os' properties.
+
+        RP records also have 'mbox' and 'txt' properties.
 
     soa()
         Returns a hash reference with the following properties: 'serial',
