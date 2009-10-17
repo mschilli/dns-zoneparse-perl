@@ -20,6 +20,8 @@ my (
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_last_name
 );
 
+my %possibly_quoted = map { $_ => undef } qw/ os cpu text mbox /;
+
 sub new {
     my $class = shift;
     my $self = bless [], $class;
@@ -60,7 +62,7 @@ sub AUTOLOAD {
      : $method eq 'ptr'      ? $dns_ptr{$self}
      : $method eq 'aaaa'     ? $dns_a4{$self}
      : $method eq 'srv'      ? $dns_srv{$self}
-     : $method eq 'hifno'    ? $dns_hinfo{$self}
+     : $method eq 'hinfo'    ? $dns_hinfo{$self}
      : $method eq 'rp'       ? $dns_rp{$self}
      : $method eq 'zonefile' ? $dns_id{$self}->{ZoneFile}
      : $method eq 'origin'   ? $dns_id{$self}->{Origin}
@@ -164,7 +166,7 @@ ZONEHEADER
     foreach my $o ( @{ $dns_txt{$self} } ) {
         next unless defined $o;
         $self->_escape_chars( $o );
-        $output .= qq[$o->{name}	$o->{ttl} $o->{class} TXT	"$o->{txt}"\n];
+        $output .= qq[$o->{name}	$o->{ttl} $o->{class} TXT	"$o->{text}"\n];
     }
     foreach my $o ( @{ $dns_ptr{$self} } ) {
         next unless defined $o;
@@ -184,7 +186,7 @@ ZONEHEADER
     foreach my $o ( @{ $dns_rp{$self} } ) {
         next unless defined $o;
         $self->_escape_chars( $o );
-        $output .= "$o->{name}	$o->{ttl}	$o->{class}	RP	$o->{mbox}	" . "$o->{txt}\n";
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	RP	$o->{mbox}	" . "$o->{text}\n";
     }
     return $output;
 }
@@ -246,6 +248,7 @@ sub _parse {
     my $valid_name_start_char =
      q/(?:[\p{IsAlnum}\@_\-\*:\/\+=\!#\$%\^&`~,\[\]{}\|\?']|/ . join( '|', map { "\\\\$_" } @ESCAPABLE_CHARACTERS ) . ')';
     # The above, but adds the literal '.' character.
+    my $valid_quoted_name_char = qr/(?:$valid_name_start_char|\.| |\t)/o;
     my $valid_name_char = qr/(?:$valid_name_start_char|\.)/o;
     my $valid_name      = qr/$valid_name_start_char(?:$valid_name_char|\.)*/o;
     my $valid_ip6       = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
@@ -282,7 +285,7 @@ sub _parse {
                 $ttl_cls
                 AAAA \s
                 ($valid_ip6)
-                /xo
+                /ixo
          )
         {
             my ( $name, $ttl, $class, $host ) = ( $1, $2, $3, $4 );
@@ -298,7 +301,7 @@ sub _parse {
                  $ttl_cls
                  MX \s+
                  (\d+) \s+
-                 ($valid_name_char)
+                 ($valid_name_char+)
                /ixo
          )
         {
@@ -380,22 +383,22 @@ sub _parse {
                     ttl   => $2,
                     host  => $4
              } );
-        } elsif ( /($valid_name)? \s+ $ttl_cls TXT \s+ \"??([^\"]*)\"??/ix ) {
+        } elsif ( /($valid_name)? \s+ $ttl_cls TXT \s+ ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+)/ixo ) {
             push @{ $dns_txt{$self} },
              $self->_massage( {
                     name  => $1,
                     ttl   => $2,
                     class => $3,
-                    txt   => $4
+                    text   => $4
              } );
-        } elsif ( /\$TTL\s+($rr_ttl)/i ) {
+        } elsif ( /\$TTL\s+($rr_ttl)/ixo ) {
             $dns_soa{$self}->{ttl} = $1;
         } elsif (
             /^($valid_name)? \s+
                  $ttl_cls
                  HINFO \s+
-                 "??([^\"]*)"?? \s+
-                 "??([^\"]*)"??
+                 ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+) \s+
+                 ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+)
                /ixo
          )
         {
@@ -411,8 +414,8 @@ sub _parse {
             /^($valid_name)? \s+
                  $ttl_cls
                  RP \s+
-                 ($valid_name) \s+
-                 ($valid_name)
+                 ("$valid_name_char*(?<!\\)"|$valid_name_char+) \s+
+                 ("$valid_name_char*(?<!\\)"|$valid_name_char+)
                /ixo
          )
         {
@@ -422,7 +425,7 @@ sub _parse {
                     ttl   => $2,
                     class => $3,
                     mbox  => $4,
-                    txt   => $5
+                    text   => $5
              } );
         } else {
             carp "Unparseable line\n  $_\n";
@@ -467,6 +470,10 @@ sub _massage {
         $record->{$_} = "" unless defined $record->{$_};
         $record->{$_} = uc $record->{$_} if $_ eq 'class';
         $record->{$_} =~ s/\\(.)/$1/g;
+        if ( exists $possibly_quoted{$_} ) {
+            $record->{$_} =~ s/^"//;
+            $record->{$_} =~ s/"$//;
+        }
     }
 
     return $record unless exists $record->{name};
@@ -582,12 +589,12 @@ MX records also have a 'priority' property.
 
 SRV records also have 'priority', 'weight' and 'port' properties.
 
-TXT records also have a 'txt' property. Note: In the past, before this call
-was documented, this additional property was known as 'text'.
+TXT records also have a 'text' property representing the record's "txt-data"
+descriptive text.
 
 HINFO records also have 'cpu' and 'os' properties.
 
-RP records also have 'mbox' and 'txt' properties.
+RP records also have 'mbox' and 'text' properties.
 
 =item soa()
 

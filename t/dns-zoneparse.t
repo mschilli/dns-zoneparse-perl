@@ -1,6 +1,6 @@
 use strict;
 BEGIN {$^W++};
-use Test::More tests => 21;
+use Test::More tests => 25;
 use File::Spec::Functions ':ALL';
 
 # See if the module compiles - it should...
@@ -149,5 +149,32 @@ sub test_zone {
             'class' => 'IN'
           }
         ], 'AAAA records parsed OK');
+
+    is_deeply($zf->hinfo, [
+        {
+            'name' => 'icarus',
+            'class' => '',
+            'ttl' => '',
+            'cpu' => 'server',
+            'os'  => 'freebsd',
+        },
+        {
+            'name' => 'soup',
+            'class' => '',
+            'ttl' => '86401',
+            'cpu' => 'server',
+            'os'  => 'freebsd',
+        }
+    ], 'HINFO records parsed OK');
+
+    is_deeply($zf->rp, [
+        {
+            'name' => 'txta',
+            'class' => '',
+            'ttl' => '',
+            'mbox' => 'mbox',
+            'text'  => 'sometext',
+        }
+    ], 'RP records parsed OK');
 }
 
