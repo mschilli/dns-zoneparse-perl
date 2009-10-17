@@ -75,13 +75,12 @@ DESCRIPTION
 
         SRV records also have 'priority', 'weight' and 'port' properties.
 
-        TXT records also have a 'txt' property. Note: In the past, before
-        this call was documented, this additional property was known as
-        'text'.
+        TXT records also have a 'text' property representing the record's
+        "txt-data" descriptive text.
 
         HINFO records also have 'cpu' and 'os' properties.
 
-        RP records also have 'mbox' and 'txt' properties.
+        RP records also have 'mbox' and 'text' properties.
 
     soa()
         Returns a hash reference with the following properties: 'serial',
