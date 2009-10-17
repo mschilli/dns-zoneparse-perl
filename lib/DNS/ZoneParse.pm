@@ -14,7 +14,7 @@ use Carp;
 # the backslash, here.
 my @ESCAPABLE_CHARACTERS = qw/ ; " \\\\ /;
 
-$VERSION = '0.98';
+$VERSION = '0.99';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_last_name
