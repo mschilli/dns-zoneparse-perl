@@ -244,19 +244,23 @@ sub _parse {
     } );
 
     my $records = $self->_clean_records( $contents );
+
     # Everything valid in the name, except the '.' character.
-    my $valid_name_start_char =
-     q/(?:[\p{IsAlnum}\@_\-\*:\/\+=\!#\$%\^&`~,\[\]{}\|\?']|/ . join( '|', map { "\\\\$_" } @ESCAPABLE_CHARACTERS ) . ')';
+    my $valid_name_start_char = q/(?:[\p{IsAlnum}\@_\-\*:\/\+=\!#\$%\^&`~,\[\]{}\|\?']|/
+     . join( '|', map { "\\\\$_" } @ESCAPABLE_CHARACTERS ) . ')';
+    # (Fix VIM highlighting.)
+
     # The above, but adds the literal '.' character.
+    my $valid_name_char        = qr/(?:$valid_name_start_char|\.)/o;
+    # Like the above, but adds whitespace (space and tabs) too.
     my $valid_quoted_name_char = qr/(?:$valid_name_start_char|\.| |\t)/o;
-    my $valid_name_char = qr/(?:$valid_name_start_char|\.)/o;
-    my $valid_name      = qr/$valid_name_start_char(?:$valid_name_char|\.)*/o;
-    my $valid_ip6       = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
-    my $rr_class        = qr/\b(?:IN|HS|CH)\b/i;
-    my $rr_type         = qr/\b(?:NS|A|CNAME)\b/i;
-    my $rr_ttl          = qr/(?:\d+[wdhms]?)+/i;
-    my $ttl_cls         = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
-    my $last_name       = $dns_id{$self}->{Origin} || '@';
+    my $valid_name             = qr/$valid_name_start_char(?:$valid_name_char|\.)*/o;
+    my $valid_ip6              = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
+    my $rr_class               = qr/\b(?:IN|HS|CH)\b/i;
+    my $rr_type                = qr/\b(?:NS|A|CNAME)\b/i;
+    my $rr_ttl                 = qr/(?:\d+[wdhms]?)+/i;
+    my $ttl_cls                = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
+    my $last_name              = $dns_id{$self}->{Origin} || '@';
 
     foreach ( @$records ) {
         TRACE( "parsing line <$_>" );
@@ -389,7 +393,7 @@ sub _parse {
                     name  => $1,
                     ttl   => $2,
                     class => $3,
-                    text   => $4
+                    text  => $4
              } );
         } elsif ( /\$TTL\s+($rr_ttl)/ixo ) {
             $dns_soa{$self}->{ttl} = $1;
@@ -425,7 +429,7 @@ sub _parse {
                     ttl   => $2,
                     class => $3,
                     mbox  => $4,
-                    text   => $5
+                    text  => $5
              } );
         } else {
             carp "Unparseable line\n  $_\n";
@@ -441,9 +445,9 @@ sub _clean_records {
     # Remove comments, but be careful not to strip anything from within a
     # quoted value.
     $zone =~ s/ ^([^";]* (?:"[^"]*"[^"]+?)*) \s* ; .*$ /$1/mgx;
-    $zone =~ s{^\s*$}{}mg;           # Remove empty lines
-    $zone =~ s{$/+}{$/}g;            # Remove multiple carriage returns
-    $zone =~ s{[ \t]+}{ }g;          # Collapse whitespace, turn TABs to spaces
+    $zone =~ s{^\s*$}{}mg;                                        # Remove empty lines
+    $zone =~ s{$/+}{$/}g;                                         # Remove multiple carriage returns
+    $zone =~ s{[ \t]+}{ }g;                                       # Collapse whitespace, turn TABs to spaces
 
     # Concatenate everything split over multiple lines i.e. elements surrounded
     # by parentheses can be split over multiple lines. See RFC 1035 section 5.1
@@ -461,8 +465,8 @@ sub _concatenate {
 }
 
 sub _massage {
-    my $self      = shift;
-    my $record    = shift;
+    my $self   = shift;
+    my $record = shift;
 
     my $last_name = \$dns_last_name{$self};
 
