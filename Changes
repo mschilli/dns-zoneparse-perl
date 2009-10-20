@@ -12,7 +12,8 @@ Revision history for Perl extension DNS::ZoneParse.
       - (je) Support TXT records containing a semicolon (bug 50165).
       - (je) Support backslashes in zone data (bug 12679).
       - (je) Support SRV records (bug 24402).
-      - (je) Add more unit tests.
+      - (je) Support names ending in what looks like a record type (bug 39006).
+      - (je) Increase unit test coverage.
       - (je) Improve parsing for lines containing comments.
 
 0.98 - Skipped

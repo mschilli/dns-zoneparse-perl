@@ -293,7 +293,7 @@ sub _parse {
     foreach ( @$records ) {
         TRACE( "parsing line <$_>" );
         if (
-            /^($valid_name)? \s*         # host
+            /^($valid_name)? \s+         # host
               $ttl_cls                   # ttl & class
               ($rr_type) \s              # record type
               ($valid_name)              # record data
@@ -485,20 +485,53 @@ sub _clean_records {
     my $self = shift;
     my ( $zone ) = shift;
 
+    $zone =~ s/^\s*;.*$//mg;
+#    $zone =~ s{^\s*$}{}mg;      # Remove empty lines
+#    $zone =~ s{$/+}{$/}g;       # Remove multiple carriage returns
+    $zone =~ s{[ \t]+}{ }g;     # Collapse whitespace, turn TABs to spaces
+
     # Remove comments, but be careful not to strip anything from within a
     # quoted value.
-    $zone =~ s/ ^([^";]* (?:"[^"]*"[^"]+?)*) \s* ; .*$ /$1/mgx;
-    $zone =~ s{^\s*$}{}mg;                                        # Remove empty lines
-    $zone =~ s{$/+}{$/}g;                                         # Remove multiple carriage returns
-    $zone =~ s{[ \t]+}{ }g;                                       # Collapse whitespace, turn TABs to spaces
+    $zone =~ s/
+        ^
+          # Capture everything at the start (nothing up to here should be
+          # quoted).
+
+          ((?<!\\)[^";]*
+            \s
+
+            # What follows will either be quoted (possibly with embedded
+            # escaped quotes), or be unquoted but contain escaped quotes.
+            (?:
+              (?:
+                # The following construct captures one or more quoted groups,
+                # possibly containing escaped quotes.
+                (?:
+                  (?<!\\)" .*? (?<!\\)" [^"]*?
+                )+
+              )
+              |
+              # This construct captures any number of non-comment characters,
+              # but won't be used by quoted groups, which are handled above.
+              (?:
+                [^;]+
+              )
+            )
+
+          )
+        # And, of course, everything after, and including, the comment
+        # character.
+        \s* ; .* $ 
+    /$1/mgx;
 
     # Concatenate everything split over multiple lines i.e. elements surrounded
     # by parentheses can be split over multiple lines. See RFC 1035 section 5.1
     $zone =~ s{(\([^\)]*?\))}{_concatenate($1)}egs;
 
     # Split into multiple records, and kick out empty lines
-    my @records = grep !/^$/, split( m|$/|, $zone );
-    return \@records;
+    # my @records = grep !/^$/, split( m|$/|, $zone );
+    # return \@records;
+    return [ grep !/^\s*$/, split( m|$/|, $zone ) ];
 }
 
 sub _concatenate {

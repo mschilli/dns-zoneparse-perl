@@ -31,8 +31,13 @@ soup                    IN      TXT     "This is a text message"
 txta                            TXT     "This is another text message"
                                 RP      mbox sometext
 
-this line is invalid!
-this line is also invalid!
+srvtest.a               IN      SRV     11 22 33 avalidname
+txttest1                        TXT     "I've\"got\\backslashes;!" ; com\\ent
+txttest2                        TXT     embedded\"quote ;comment
+txttest3                        TXT     noquotes;comment
+
+this should fail
+this should fail too
 
 commenttest0                    HINFO   test test2
 commenttest1                    HINFO   test test2 ; comment

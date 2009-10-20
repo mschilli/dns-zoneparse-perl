@@ -1,25 +1,32 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 27;
+use Test::More tests => 31;
 use File::Spec::Functions ':ALL';
 
 # See if the module compiles - it should...
 require_ok( 'DNS::ZoneParse' );
 
 my $filename = catfile( ( splitpath( rel2abs( $0 ) ) )[0, 1], 'test-zone.db' );
-local *FH;
-open FH, "< $filename" or die "error loading test file $filename: $!";
-my $zone_data = do { local $/; <FH> };
-close FH;
+my $FH;
+open( $FH, '<', $filename ) or die "error loading test file $filename: $!";
+my $zone_data = do { local $/; <$FH> };
+close $FH;
+
+sub on_parse_fail {
+    my ( $dns, $line ) = @_;
+    if ( $line !~ /this should fail/ ) {
+        warn "Parse failure on line: $line\n";
+    }
+}
 
 #create a DNS::ZoneParse object;
 
-my $str_zonefile = DNS::ZoneParse->new( \$zone_data, undef, sub {} );
+my $str_zonefile = DNS::ZoneParse->new( \$zone_data, undef, \&on_parse_fail );
 ok( $str_zonefile, 'new obj from string' );
 ok( $str_zonefile->last_parse_error_count() == 2, "caught all errors" );
 test_zone( $str_zonefile );
 
-$str_zonefile = DNS::ZoneParse->new( $filename, undef, sub {} );
+$str_zonefile = DNS::ZoneParse->new( $filename, undef, \&on_parse_fail );
 ok( $str_zonefile, 'new obj from filename' );
 ok( $str_zonefile->last_parse_error_count() == 2, "caught all errors" );
 test_zone( $str_zonefile );
@@ -29,6 +36,7 @@ sub test_zone {
 
     # See if the new_serial method works.
     my $serial = $zf->soa->{serial};
+    ok( defined $serial, 'serial is defined' );
     $zf->new_serial( 1 );
     my $newserial = $zf->soa->{serial};
     ok( $newserial = $serial + 1, 'new_serial( int )' );
@@ -180,8 +188,25 @@ sub test_zone {
                 'ttl'   => '',
                 'name'  => 'txta',
                 'class' => ''
-            }
-
+            },
+            {
+                'text'  => 'I\'ve"got\\backslashes;!',
+                'ttl'   => '',
+                'name'  => 'txttest1',
+                'class' => ''
+            },
+            {
+                'text'  => 'embedded"quote',
+                'ttl'   => '',
+                'name'  => 'txttest2',
+                'class' => ''
+            },
+            {
+                'text'  => 'noquotes',
+                'ttl'   => '',
+                'name'  => 'txttest3',
+                'class' => ''
+            },
         ],
         'TXT records parsed OK'
     );
@@ -209,6 +234,21 @@ sub test_zone {
             },
         ],
         'RP records parsed OK'
+    );
+
+    is_deeply(
+        $zf->srv,
+        [{
+                'name'  => 'srvtest.a',
+                'class' => 'IN',
+                'ttl'   => '',
+                'priority' => 11,
+                'weight'   => 22,
+                'port'     => 33,
+                'host'     => 'avalidname',
+            },
+        ],
+        'SRV records parsed OK'
     );
 
     is_deeply(
