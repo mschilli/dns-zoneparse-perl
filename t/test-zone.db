@@ -30,6 +30,10 @@ soup                    IN      TXT     "This is a text message"
          86401                  HINFO   server "freebsd"
 txta                            TXT     "This is another text message"
                                 RP      mbox sometext
+
+this line is invalid!
+this line is also invalid!
+
 commenttest0                    HINFO   test test2
 commenttest1                    HINFO   test test2 ; comment
 commenttest2                    HINFO   test test2 ; "comment"

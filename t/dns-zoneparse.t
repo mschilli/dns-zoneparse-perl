@@ -1,6 +1,6 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 25;
+use Test::More tests => 27;
 use File::Spec::Functions ':ALL';
 
 # See if the module compiles - it should...
@@ -14,12 +14,14 @@ close FH;
 
 #create a DNS::ZoneParse object;
 
-my $str_zonefile = DNS::ZoneParse->new( \$zone_data );
+my $str_zonefile = DNS::ZoneParse->new( \$zone_data, undef, sub {} );
 ok( $str_zonefile, 'new obj from string' );
+ok( $str_zonefile->last_parse_error_count() == 2, "caught all errors" );
 test_zone( $str_zonefile );
 
-$str_zonefile = DNS::ZoneParse->new( $filename );
+$str_zonefile = DNS::ZoneParse->new( $filename, undef, sub {} );
 ok( $str_zonefile, 'new obj from filename' );
+ok( $str_zonefile->last_parse_error_count() == 2, "caught all errors" );
 test_zone( $str_zonefile );
 
 sub test_zone {

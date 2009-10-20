@@ -17,18 +17,44 @@ my @ESCAPABLE_CHARACTERS = qw/ ; " \\\\ /;
 $VERSION = '0.99';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
-    %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_last_name
+    %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_last_name,
+    %unparseable_line_callback, %last_parse_error_count,
 );
 
 my %possibly_quoted = map { $_ => undef } qw/ os cpu text mbox /;
 
 sub new {
     my $class = shift;
+    my $file = shift;
+    my $origin = shift;
+    my $unparseable_callback = shift;
     my $self = bless [], $class;
 
+    if ( ref $unparseable_callback eq 'CODE' ) {
+        $unparseable_line_callback{$self} = $unparseable_callback;
+    }
     $self->_initialize();
-    $self->_load_file( @_ ) if @_;
+    $self->_load_file( $file, $origin ) if $file;
     return $self;
+}
+
+sub on_unparseable_line {
+    my $self = shift;
+    my $arg = shift;
+    if ( !defined $arg ) {
+        return $unparseable_line_callback{$self};
+    } elsif ( ref $arg eq 'CODE' ) {
+        my $old = $unparseable_line_callback{$self};
+        $unparseable_line_callback{$self} = $arg;
+        return $old;
+    } else {
+        return undef;
+    }
+}
+
+sub last_parse_error_count {
+    my $self = shift;
+    return $last_parse_error_count{$self};
 }
 
 sub DESTROY {
@@ -46,6 +72,8 @@ sub DESTROY {
     delete $dns_rp{$self};
     delete $dns_id{$self};
     delete $dns_last_name{$self};
+    delete $unparseable_line_callback{$self};
+    delete $last_parse_error_count{$self};
 }
 
 sub AUTOLOAD {
@@ -210,13 +238,14 @@ sub _initialize {
     $dns_hinfo{$self}     = [];
     $dns_rp{$self}        = [];
     $dns_last_name{$self} = '@';
+    $last_parse_error_count{$self} = 0;
     return 1;
 }
 
 sub _load_file {
     my ( $self, $zonefile, $origin ) = @_;
     my $zone_contents;
-    if ( ref( $zonefile ) eq "SCALAR" ) {
+    if ( ref( $zonefile ) eq 'SCALAR' ) {
         $zone_contents = $$zonefile;
     } else {
         my $inZONE;
@@ -441,13 +470,12 @@ sub _parse {
                     text  => $5
              } );
         } else {
-            my $qa = qr/^($valid_name)? \s+
-                 $ttl_cls
-                 HINFO \s+
-                 ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+) \s+
-                 ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+)
-            /;
-            carp "Unparseable line\n  $_ ->\n$qa\n";
+            $last_parse_error_count{$self}++;
+            if ( $unparseable_line_callback{$self} ) {
+                $unparseable_line_callback{$self}->( $self, $_ );
+            } else {
+                carp "Unparseable line\n  $_\n";
+            }
         }
     }
     return 1;
@@ -566,9 +594,9 @@ RRs are supported: SOA, NS, MX, A, CNAME, TXT, PTR, HINFO, and RP. It could
 be useful for maintaining DNS zones, or for transferring DNS zones to other
 servers. If you want to generate an XML-friendly version of your zone files,
 it is easy to use XML::Simple with this module once you have parsed the
-zonefile.
+zone file.
 
-DNS::ZoneParse scans the DNS zonefile - removes comments and seperates
+DNS::ZoneParse scans the DNS zone file - removes comments and seperates
 the file into its constituent records. It then parses each record and
 stores the records internally. See below for information on the accessor
 methods.
@@ -580,7 +608,7 @@ methods.
 
 =item new
 
-This creates the DNS::ZoneParse Object and loads the zonefile
+This creates the DNS::ZoneParse object and loads the zone file.
 
 Example:
     my $zonefile = DNS::ZoneParse->new("/path/to/zonefile.db");
@@ -592,6 +620,14 @@ You can pass a second, optional parameter to the constructor to supply an
 C<$origin> if none can be found in the zone file.
 
     my $zonefile = DNS::ZoneParse->new( \$zone_contents, $origin );
+
+You can pass a third, optional parameter to the constructor to supply a
+callback which will be called whenever an unparsable line is encountered in
+the zone file. See C<on_unparseable_line> for details on this parameter and
+how errors are handled when parsing zone files.
+
+If you plan to pass a on_unparseable_line callback but do not wish to specify
+an C<$origin>, pass 'undef' as the C<$origin> parameter.
 
 =item a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp()
 
@@ -645,9 +681,40 @@ Examples:
 
 =item output
 
-C<output()> returns the new zonefile output as a string. If you wish your
+C<output()> returns the new zone file output as a string. If you wish your
 output formatted differently, you can pass the output of C<dump()> to your
 favourite templating module.
+
+=item last_parse_error_count
+
+Returns a count of the number of unparsable lines from the last time a
+zone file was parsed. If no zone file has been parsed yet, returns 0.
+
+If you want to be sure that a zone file was parsed completely and without
+error, the return value of this method should be checked after the constructor
+is called (or after a call to _parse).
+
+=item on_unparseable_line
+
+C<on_unparseable_line()> is an accessor method for the callback used when an
+unparseable line is encountered while parsing a zone file. If not set,
+DNS::ZoneParse will C<croak> when an unparsable line is encountered, but will
+continue to parse the file. Each time an unparsable line is encountered, an
+internal counter is incrememnted. See C<last_parse_error_count> for details.
+
+If you want to abort parsing when an unparsable line is found, call C<die>
+from within your callback and catch that die with an eval block around the
+DNS::ZoneParse constructor (or call to _parse).
+
+Takes a single optional parameter, a code reference to the function that
+will be called when an unparsable line is reached. This code reference will be
+passed two parameters, the first is a reference to the DNS::ZoneParse object
+that is parsing the file, and the second is the text of the line that could
+not be parsed. Returns a reference to the last callback.
+
+If passed an undefined value, a reference to the current callback is returned.
+
+If passed any other value, undef is returned.
 
 =back
 
@@ -677,7 +744,7 @@ name "new" and then return the zone file.
 
 
 
-This script will convert a DNS Zonefile to an XML file using XML::Simple.
+This script will convert a DNS Zone file to an XML file using XML::Simple.
 
 
     use strict;
@@ -693,14 +760,14 @@ This script will convert a DNS Zonefile to an XML file using XML::Simple.
 
 =head1 CHANGES
 
-see F<Changes>
+See F<Changes>
 
 =head1 API
 
 The DNS::ZoneParse API may change in future versions. At present, the parsing
 is not as strict as it should be and support for C<$ORIGIN> and C<$TTL> is
 quite basic. It would also be nice to support the C<INCLUDE>
-statement. Furthermore, parsing large zonefiles with thousands of records can
+statement. Furthermore, parsing large zone files with thousands of records can
 use lots of memory - some people have requested a callback interface.
 
 =head1 BUGS
@@ -726,7 +793,7 @@ Simon Flack
 
 =head1 MAINTENANCE
 
-Maintainer: Mike Schilli, m@perlmeister.com,
+Maintainer: Mike Schilli, m@perlmeister.com; John Eaglesham, perl@8192.net
 Bug queue: http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
 
 =head1 LICENSE
