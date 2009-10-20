@@ -29,5 +29,40 @@ icarus                  IN      AAAA    fe80::0260:83ff:fe7c:3a2a
 soup                    IN      TXT     "This is a text message"
          86401                  HINFO   server "freebsd"
 txta                            TXT     "This is another text message"
-                                RP      "mbox" sometext
-
+                                RP      mbox sometext
+commenttest0                    HINFO   test test2
+commenttest1                    HINFO   test test2 ; comment
+commenttest2                    HINFO   test test2 ; "comment"
+commenttest3                    HINFO   test test2 ; "com;ment"
+commenttest4                    HINFO   test "test2"
+commenttest5                    HINFO   test "test2" ; comment
+commenttest6                    HINFO   test "test2" ; "comment"
+commenttest7                    HINFO   test "test2" ; "com;ment"
+commenttest8                    HINFO   "test" test2
+commenttest9                    HINFO   "test" test2 ; comment
+commenttest10                   HINFO   "test" test2 ; "comment"
+commenttest11                   HINFO   "test" test2 ; "comm;ent"
+commenttest12                   HINFO   "test" "test2"
+commenttest13                   HINFO   "test" "test2" ; comment
+commenttest14                   HINFO   "test" "test2" ; "comment"
+commenttest15                   HINFO   "test" "test2" ; "com;ment"
+commenttest16                   HINFO   test "tes;t2"
+commenttest17                   HINFO   test "tes;t2" ; comment
+commenttest18                   HINFO   test "tes;t2" ; "comment"
+commenttest19                   HINFO   test "tes;t2" ; "com;ment"
+commenttest20                   HINFO   "test" "tes;t2"
+commenttest21                   HINFO   "test" "tes;t2" ; comment
+commenttest22                   HINFO   "test" "tes;t2" ; "comment"
+commenttest23                   HINFO   "test" "tes;t2" ; "com;ment"
+commenttest24                   HINFO   "te;st" test2
+commenttest25                   HINFO   "te;st" test2 ; comment
+commenttest26                   HINFO   "te;st" test2 ; "comment"
+commenttest27                   HINFO   "te;st" test2 ; "comm;ent"
+commenttest28                   HINFO   "te;st" "test2"
+commenttest29                   HINFO   "te;st" "test2" ; comment
+commenttest30                   HINFO   "te;st" "test2" ; "comment"
+commenttest31                   HINFO   "te;st" "test2" ; "com;ment"
+commenttest32                   HINFO   "te;st" "te;st2"
+commenttest33                   HINFO   "te;st" "te;st2" ; comment
+commenttest34                   HINFO   "te;st" "te;st2" ; "comment"
+commenttest35                   HINFO   "te;st" "te;st2" ; "com;ment"

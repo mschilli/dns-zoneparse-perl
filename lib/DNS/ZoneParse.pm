@@ -246,14 +246,13 @@ sub _parse {
     my $records = $self->_clean_records( $contents );
 
     # Everything valid in the name, except the '.' character.
-    my $valid_name_start_char = q/(?:[\p{IsAlnum}\@_\-\*:\/\+=\!#\$%\^&`~,\[\]{}\|\?']|/
+    my $valid_name_start_char = q/(?:[\p{IsAlnum}\@_\-*:+=!#$%^&`~,\[\]{}|?'\/]|/
      . join( '|', map { "\\\\$_" } @ESCAPABLE_CHARACTERS ) . ')';
-    # (Fix VIM highlighting.)
 
     # The above, but adds the literal '.' character.
     my $valid_name_char        = qr/(?:$valid_name_start_char|\.)/o;
     # Like the above, but adds whitespace (space and tabs) too.
-    my $valid_quoted_name_char = qr/(?:$valid_name_start_char|\.| |\t)/o;
+    my $valid_quoted_name_char = qr/(?:$valid_name_start_char|\.| |;|\t)/o;
     my $valid_name             = qr/$valid_name_start_char(?:$valid_name_char|\.)*/o;
     my $valid_ip6              = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
     my $rr_class               = qr/\b(?:IN|HS|CH)\b/i;
@@ -387,7 +386,13 @@ sub _parse {
                     ttl   => $2,
                     host  => $4
              } );
-        } elsif ( /($valid_name)? \s+ $ttl_cls TXT \s+ ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+)/ixo ) {
+        } elsif (
+            /($valid_name)? \s+
+                $ttl_cls
+                TXT \s+
+                ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+)
+            /ixo
+        ) {
             push @{ $dns_txt{$self} },
              $self->_massage( {
                     name  => $1,
@@ -395,7 +400,11 @@ sub _parse {
                     class => $3,
                     text  => $4
              } );
-        } elsif ( /\$TTL\s+($rr_ttl)/ixo ) {
+        } elsif (
+            /\$TTL \s+
+                ($rr_ttl)
+            /ixo
+        ) {
             $dns_soa{$self}->{ttl} = $1;
         } elsif (
             /^($valid_name)? \s+
@@ -418,8 +427,8 @@ sub _parse {
             /^($valid_name)? \s+
                  $ttl_cls
                  RP \s+
-                 ("$valid_name_char*(?<!\\)"|$valid_name_char+) \s+
-                 ("$valid_name_char*(?<!\\)"|$valid_name_char+)
+                 ($valid_name_char+) \s+
+                 ($valid_name_char+)
                /ixo
          )
         {
@@ -432,7 +441,13 @@ sub _parse {
                     text  => $5
              } );
         } else {
-            carp "Unparseable line\n  $_\n";
+            my $qa = qr/^($valid_name)? \s+
+                 $ttl_cls
+                 HINFO \s+
+                 ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+) \s+
+                 ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+)
+            /;
+            carp "Unparseable line\n  $_ ->\n$qa\n";
         }
     }
     return 1;
