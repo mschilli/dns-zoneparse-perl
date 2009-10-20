@@ -1,5 +1,24 @@
 Revision history for Perl extension DNS::ZoneParse.
 
+0.99 - Tue Oct 20 2009
+      - (je) Support for callback to catch unparsable lines.
+      - (je) Keep a counter of unparsable lines after parsing.
+      - (je) Support new record types (SRV, TXT, RP, HINFO).
+      - (je) Automatic un/escaping of special characters.
+      - (je) Reformat regular expressions for clarity.
+      - (je) Update file open syntax.
+      - (je) Require Perl 5.6+.
+      - (je) Support for Unicode names (bug 27527).
+      - (je) Support TXT records containing a semicolon (bug 50165).
+      - (je) Support backslashes in zone data (bug 12679).
+      - (je) Support SRV records (bug 24402).
+      - (je) Add more unit tests.
+      - (je) Improve parsing for lines containing comments.
+
+0.98 - Skipped
+
+0.97 - Skipped
+
 0.96 - Fri Nov 14 2008
       - (ms) Obtained co-maintainership to apply overdue patches
       - (ms) Applied SRV patch by Andrew Fresh: 

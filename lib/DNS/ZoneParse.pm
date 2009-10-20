@@ -249,7 +249,7 @@ sub _load_file {
         $zone_contents = $$zonefile;
     } else {
         my $inZONE;
-        if ( open( $inZONE, "$zonefile" ) ) {
+        if ( open( $inZONE, $zonefile ) ) {
             $zone_contents = do { local $/; <$inZONE> };
             close( $inZONE );
         } else {
@@ -572,9 +572,10 @@ DNS::ZoneParse - Parse and manipulate DNS Zone Files.
     $zonefile->new_serial();
     
     # write the new zone file to disk 
-    open NEWZONE, ">/path/to/dns/zonefile.db" or die "error";
-    print NEWZONE $zonefile->output();
-    close NEWZONE;
+    my $newzone;
+    open($newzone, '>', '/path/to/dns/zonefile.db') or die "error";
+    print $newzone $zonefile->output();
+    close $newzone;
 
 =head1 INSTALLATION
 
@@ -793,7 +794,8 @@ Simon Flack
 
 =head1 MAINTENANCE
 
-Maintainer: Mike Schilli, m@perlmeister.com; John Eaglesham, perl@8192.net
+Maintainers: Mike Schilli (m@perlmeister.com), John Eaglesham (perl@8192.net).
+
 Bug queue: http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
 
 =head1 LICENSE

@@ -18,9 +18,10 @@ SYNOPSIS
         $zonefile->new_serial();
     
         # write the new zone file to disk 
-        open NEWZONE, ">/path/to/dns/zonefile.db" or die "error";
-        print NEWZONE $zonefile->output();
-        close NEWZONE;
+        my $newzone;
+        open($newzone, '>', '/path/to/dns/zonefile.db') or die "error";
+        print $newzone $zonefile->output();
+        close $newzone;
 
 INSTALLATION
        perl Makefile.PL
@@ -40,15 +41,15 @@ DESCRIPTION
     RP. It could be useful for maintaining DNS zones, or for transferring
     DNS zones to other servers. If you want to generate an XML-friendly
     version of your zone files, it is easy to use XML::Simple with this
-    module once you have parsed the zonefile.
+    module once you have parsed the zone file.
 
-    DNS::ZoneParse scans the DNS zonefile - removes comments and seperates
+    DNS::ZoneParse scans the DNS zone file - removes comments and seperates
     the file into its constituent records. It then parses each record and
     stores the records internally. See below for information on the accessor
     methods.
 
   METHODS
-    new This creates the DNS::ZoneParse Object and loads the zonefile
+    new This creates the DNS::ZoneParse object and loads the zone file.
 
         Example: my $zonefile = DNS::ZoneParse->new("/path/to/zonefile.db");
 
@@ -59,6 +60,15 @@ DESCRIPTION
         supply an $origin if none can be found in the zone file.
 
             my $zonefile = DNS::ZoneParse->new( \$zone_contents, $origin );
+
+        You can pass a third, optional parameter to the constructor to
+        supply a callback which will be called whenever an unparsable line
+        is encountered in the zone file. See "on_unparseable_line" for
+        details on this parameter and how errors are handled when parsing
+        zone files.
+
+        If you plan to pass a on_unparseable_line callback but do not wish
+        to specify an $origin, pass 'undef' as the $origin parameter.
 
     a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp()
         These methods return references to the resource records. For
@@ -108,9 +118,42 @@ DESCRIPTION
                     # adds 50 to the original serial number
 
     output
-        "output()" returns the new zonefile output as a string. If you wish
+        "output()" returns the new zone file output as a string. If you wish
         your output formatted differently, you can pass the output of
         "dump()" to your favourite templating module.
+
+    last_parse_error_count
+        Returns a count of the number of unparsable lines from the last time
+        a zone file was parsed. If no zone file has been parsed yet, returns
+        0.
+
+        If you want to be sure that a zone file was parsed completely and
+        without error, the return value of this method should be checked
+        after the constructor is called (or after a call to _parse).
+
+    on_unparseable_line
+        "on_unparseable_line()" is an accessor method for the callback used
+        when an unparseable line is encountered while parsing a zone file.
+        If not set, DNS::ZoneParse will "croak" when an unparsable line is
+        encountered, but will continue to parse the file. Each time an
+        unparsable line is encountered, an internal counter is incrememnted.
+        See "last_parse_error_count" for details.
+
+        If you want to abort parsing when an unparsable line is found, call
+        "die" from within your callback and catch that die with an eval
+        block around the DNS::ZoneParse constructor (or call to _parse).
+
+        Takes a single optional parameter, a code reference to the function
+        that will be called when an unparsable line is reached. This code
+        reference will be passed two parameters, the first is a reference to
+        the DNS::ZoneParse object that is parsing the file, and the second
+        is the text of the line that could not be parsed. Returns a
+        reference to the last callback.
+
+        If passed an undefined value, a reference to the current callback is
+        returned.
+
+        If passed any other value, undef is returned.
 
   EXAMPLES
     This script will print the A records in a zone file, add a new A record
@@ -134,7 +177,7 @@ DESCRIPTION
         $zonefile->new_serial();
         my $newfile = $zonefile->output();
 
-    This script will convert a DNS Zonefile to an XML file using
+    This script will convert a DNS Zone file to an XML file using
     XML::Simple.
 
         use strict;
@@ -149,13 +192,13 @@ DESCRIPTION
                              rootname => $zonefile->origin);
 
 CHANGES
-    see Changes
+    See Changes
 
 API
     The DNS::ZoneParse API may change in future versions. At present, the
     parsing is not as strict as it should be and support for $ORIGIN and
     $TTL is quite basic. It would also be nice to support the "INCLUDE"
-    statement. Furthermore, parsing large zonefiles with thousands of
+    statement. Furthermore, parsing large zone files with thousands of
     records can use lots of memory - some people have requested a callback
     interface.
 
@@ -178,7 +221,10 @@ AUTHOR
     Simon Flack
 
 MAINTENANCE
-    Maintainer: Mike Schilli, m@perlmeister.com, Bug queue:
+    Maintainers: Mike Schilli (m@perlmeister.com), John Eaglesham
+    (perl@8192.net).
+
+    Bug queue:
     http://rt.cpan.org/Public/Dist/Display.html?Name=DNS-ZoneParse
 
 LICENSE
