@@ -164,7 +164,13 @@ sub test_zone {
                 'name'  => 'ftp',
                 'class' => 'IN',
                 'host'  => 'www'
-            }
+            },
+            {
+                'ttl'   => '',
+                'name'  => '-=+!@#$%^&*`~://+-,[]{}|\\?~`\'";',
+                'class' => '',
+                'host'  => 'ns0.dns-zoneparse-test.net.'
+            },
         ],
         'CNAME records parsed OK'
     );
@@ -190,7 +196,7 @@ sub test_zone {
                 'class' => ''
             },
             {
-                'text'  => 'I\'ve"got\\backslashes;!',
+                'text'  => 'I\'ve"got\\back\\"slashes;!',
                 'ttl'   => '',
                 'name'  => 'txttest1',
                 'class' => ''

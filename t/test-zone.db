@@ -32,12 +32,15 @@ txta                            TXT     "This is another text message"
                                 RP      mbox sometext
 
 srvtest.a               IN      SRV     11 22 33 avalidname
-txttest1                        TXT     "I've\"got\\backslashes;!" ; com\\ent
+txttest1                        TXT     "I've\"got\\back\\\"slashes;!" ; com\\ent
 txttest2                        TXT     embedded\"quote ;comment
 txttest3                        TXT     noquotes;comment
 
 this should fail
 this should fail too
+
+; Believe it or not, named-checkzone accepts this record, so we should too.
+-=+!@#$%^&*`~://+-,[]{}|\\?~`'\"\;          CNAME   ns0.dns-zoneparse-test.net.
 
 commenttest0                    HINFO   test test2
 commenttest1                    HINFO   test test2 ; comment

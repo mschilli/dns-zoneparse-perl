@@ -15,6 +15,7 @@ Revision history for Perl extension DNS::ZoneParse.
       - (je) Support names ending in what looks like a record type (bug 39006).
       - (je) Increase unit test coverage.
       - (je) Improve parsing for lines containing comments.
+      - (je) Improve parsing for multi-line records.
 
 0.98 - Skipped
 

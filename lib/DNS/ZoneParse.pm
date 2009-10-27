@@ -292,6 +292,11 @@ sub _parse {
 
     foreach ( @$records ) {
         TRACE( "parsing line <$_>" );
+
+        # It's faster to skip blank lines here than to remove them inside
+        # _clean_records.
+        next if /^\s*$/;
+
         if (
             /^($valid_name)? \s+         # host
               $ttl_cls                   # ttl & class
@@ -483,61 +488,63 @@ sub _parse {
 
 sub _clean_records {
     my $self = shift;
-    my ( $zone ) = shift;
+    my $zone = shift;
+    my $x = 0;
+    my $in_comment = 0;
+    my $in_quote = 0;
+    my $in_concat = 0;
+    my $last_char = '';
+    my $next_is_escaped = 0;
+    my @lines;
 
-    $zone =~ s/^\s*;.*$//mg;
-#    $zone =~ s{^\s*$}{}mg;      # Remove empty lines
-#    $zone =~ s{$/+}{$/}g;       # Remove multiple carriage returns
-    $zone =~ s{[ \t]+}{ }g;     # Collapse whitespace, turn TABs to spaces
+    $zone =~ s/\r\n/\n/sg;
+    $zone =~ s/^\s*;.*$//mg;    # Remove lines with nothing but comments.
+    $zone =~ s{[ \t]+}{ }g;     # Collapse whitespace, turn TABs to spaces.
 
-    # Remove comments, but be careful not to strip anything from within a
-    # quoted value.
-    $zone =~ s/
-        ^
-          # Capture everything at the start (nothing up to here should be
-          # quoted).
+    while (1) {
+        my $c = substr( $zone, $x, 1 );
 
-          ((?<!\\)[^";]*
-            \s
+        # If we're not in a comment then process parentheses, braces, comment
+        # tags, and quotes. If not, just look for the newline.
+        if ( !$in_comment ) {
+            if ( !$next_is_escaped ) {
+                if ( $c eq '"' ) {
+                    $in_quote = !$in_quote;
+                } elsif ( $c eq '\\' ) {
+                    $next_is_escaped = 1;
+                } elsif ( !$in_quote ) {
+                    if ( $c eq ';' ) {
+                        $in_comment = 1;
+                        substr( $zone, $x, 1 ) = '';
+                        $x--;
+                    } elsif ( $c eq '(' ) {
+                        substr( $zone, $x, 1 ) = ' ';
+                        $in_concat++;
+                    } elsif ( ( $in_concat ) && ( $c eq ')' ) ) {
+                        substr( $zone, $x, 1 ) = ' ';
+                        $in_concat--;
+                    }
+                }
+            } else {
+                $next_is_escaped = 0;
+            }
+        } elsif ( $c ne "\n" ) {
+            substr( $zone, $x, 1 ) = '';
+            $x--;
+        }
+        if ( $c eq "\n" ) {
+            $in_comment = 0;
+            if ( $in_concat ) {
+                substr( $zone, $x, 1 ) = '';
+                $x--;
+            }
+        }
+        $x++;
+        if ( $x >= length( $zone ) ) { last; }
+        $last_char = $c;
+    }
 
-            # What follows will either be quoted (possibly with embedded
-            # escaped quotes), or be unquoted but contain escaped quotes.
-            (?:
-              (?:
-                # The following construct captures one or more quoted groups,
-                # possibly containing escaped quotes.
-                (?:
-                  (?<!\\)" .*? (?<!\\)" [^"]*?
-                )+
-              )
-              |
-              # This construct captures any number of non-comment characters,
-              # but won't be used by quoted groups, which are handled above.
-              (?:
-                [^;]+
-              )
-            )
-
-          )
-        # And, of course, everything after, and including, the comment
-        # character.
-        \s* ; .* $ 
-    /$1/mgx;
-
-    # Concatenate everything split over multiple lines i.e. elements surrounded
-    # by parentheses can be split over multiple lines. See RFC 1035 section 5.1
-    $zone =~ s{(\([^\)]*?\))}{_concatenate($1)}egs;
-
-    # Split into multiple records, and kick out empty lines
-    # my @records = grep !/^$/, split( m|$/|, $zone );
-    # return \@records;
-    return [ grep !/^\s*$/, split( m|$/|, $zone ) ];
-}
-
-sub _concatenate {
-    my $text_in_parenth = shift;
-    $text_in_parenth =~ s{\s*$/\s*}{ }g;
-    return $text_in_parenth;
+    return [ split( /\n/, $zone ) ];
 }
 
 sub _massage {
@@ -547,7 +554,7 @@ sub _massage {
     my $last_name = \$dns_last_name{$self};
 
     foreach ( keys %$record ) {
-        $record->{$_} = "" unless defined $record->{$_};
+        $record->{$_} = '' unless defined $record->{$_};
         $record->{$_} = uc $record->{$_} if $_ eq 'class';
         $record->{$_} =~ s/\\(.)/$1/g;
         if ( exists $possibly_quoted{$_} ) {
