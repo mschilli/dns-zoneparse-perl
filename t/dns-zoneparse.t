@@ -1,6 +1,6 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 33;
+use Test::More tests => 49;
 use File::Spec::Functions ':ALL';
 
 # See if the module compiles - it should...
@@ -29,6 +29,12 @@ test_zone( $str_zonefile );
 $str_zonefile = DNS::ZoneParse->new( $filename, undef, \&on_parse_fail );
 ok( $str_zonefile, 'new obj from filename' );
 ok( $str_zonefile->last_parse_error_count() == 2, "caught all errors" );
+test_zone( $str_zonefile );
+
+my $serialized = $str_zonefile->output();
+$str_zonefile = DNS::ZoneParse->new( \$serialized, undef, \&on_parse_fail );
+ok( $str_zonefile, 'new obj from output' );
+ok( $str_zonefile->last_parse_error_count() == 0, "caught all errors (none!)" );
 test_zone( $str_zonefile );
 
 sub test_zone {
