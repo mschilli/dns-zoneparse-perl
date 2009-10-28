@@ -3,7 +3,7 @@ Revision history for Perl extension DNS::ZoneParse.
 0.99 - Tue Oct 20 2009
       - (je) Support for callback to catch unparsable lines.
       - (je) Keep a counter of unparsable lines after parsing.
-      - (je) Support new record types (SRV, TXT, RP, HINFO).
+      - (je) Support new record types (SRV, TXT, RP, HINFO, LOC).
       - (je) Automatic un/escaping of special characters.
       - (je) Reformat regular expressions for clarity.
       - (je) Update file open syntax.

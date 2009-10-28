@@ -35,12 +35,24 @@ srvtest.a               IN      SRV     11 22 33 avalidname
 txttest1                        TXT     "I've\"got\\back\\\"slashes;!" ; com\\ent
 txttest2                        TXT     embedded\"quote ;comment
 txttest3                        TXT     noquotes;comment
+txttest4                        TXT     "MORE (complicated) stuff -h343-"
 
 this should fail
 this should fail too
 
 ; Believe it or not, named-checkzone accepts this record, so we should too.
 -=+!@#$%^&*`~://+-,[]{}|\\?~`'\"\;          CNAME   ns0.dns-zoneparse-test.net.
+
+borrowed.from.rfc.1876.com.     LOC   42 21 54 N 71 06 18 W -24m 30m
+
+borrowed2.from.rfc.1876.com.    LOC   42 21 43.952 N 71 5 6.344 W -24m 1m 200m
+
+borrowed3.from.rfc.1876.com.    LOC   52 14 05 N 00 08 50 E 10m
+
+borrowed4.from.rfc.1876.com.    LOC   32 7 19 S 116 2 25 E 10m
+
+borrowed5.from.rfc.1876.com.    LOC   ( 42 21 28.764 N 71 00 51.617 W
+                                        -44m 2000m )
 
 commenttest0                    HINFO   test test2
 commenttest1                    HINFO   test test2 ; comment

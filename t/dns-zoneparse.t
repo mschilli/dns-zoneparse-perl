@@ -1,6 +1,6 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 31;
+use Test::More tests => 33;
 use File::Spec::Functions ':ALL';
 
 # See if the module compiles - it should...
@@ -213,6 +213,12 @@ sub test_zone {
                 'name'  => 'txttest3',
                 'class' => ''
             },
+            {
+                'text'  => 'MORE (complicated) stuff -h343-',
+                'ttl'   => '',
+                'name'  => 'txttest4',
+                'class' => ''
+            },
         ],
         'TXT records parsed OK'
     );
@@ -255,6 +261,97 @@ sub test_zone {
             },
         ],
         'SRV records parsed OK'
+    );
+
+    is_deeply(
+        $zf->loc,
+        [{
+              'name' => 'borrowed.from.rfc.1876.com.',
+              'ttl' => '',
+              'class' => '',
+              'd1' => '42',
+              'm1' => '21',
+              's1' => '54',
+              'NorS' => 'N',
+              'd2' => '71',
+              'm2' => '06',
+              's2' => '18',
+              'EorW' => 'W',
+              'alt' => '-24m',
+              'siz' => '30m',
+              'hp' => '',
+              'vp' => '',
+            },
+            {
+              'name' => 'borrowed2.from.rfc.1876.com.',
+              'ttl' => '',
+              'class' => '',
+              'd1' => '42',
+              'm1' => '21',
+              's1' => '43.952',
+              'NorS' => 'N',
+              'd2' => '71',
+              'm2' => '5',
+              's2' => '6.344',
+              'EorW' => 'W',
+              'alt' => '-24m',
+              'siz' => '1m',
+              'hp' => '200m',
+              'vp' => '',
+            },
+            {
+              'name' => 'borrowed3.from.rfc.1876.com.',
+              'ttl' => '',
+              'class' => '',
+              'd1' => '52',
+              'm1' => '14',
+              's1' => '05',
+              'NorS' => 'N',
+              'd2' => '00',
+              'm2' => '08',
+              's2' => '50',
+              'EorW' => 'E',
+              'alt' => '10m',
+              'siz' => '',
+              'hp' => '',
+              'vp' => '',
+            },
+            {
+              'name' => 'borrowed4.from.rfc.1876.com.',
+              'ttl' => '',
+              'class' => '',
+              'd1' => '32',
+              'm1' => '7',
+              's1' => '19',
+              'NorS' => 'S',
+              'd2' => '116',
+              'm2' => '2',
+              's2' => '25',
+              'EorW' => 'E',
+              'alt' => '10m',
+              'siz' => '',
+              'hp' => '',
+              'vp' => '',
+            },
+            {
+              'name' => 'borrowed5.from.rfc.1876.com.',
+              'ttl' => '',
+              'class' => '',
+              'd1' => '42',
+              'm1' => '21',
+              's1' => '28.764',
+              'NorS' => 'N',
+              'd2' => '71',
+              'm2' => '00',
+              's2' => '51.617',
+              'EorW' => 'W',
+              'alt' => '-44m',
+              'siz' => '2000m',
+              'hp' => '',
+              'vp' => '',
+            },
+        ],
+        'LOC records parsed OK'
     );
 
     is_deeply(
@@ -532,4 +629,3 @@ sub test_zone {
     );
 
 }
-

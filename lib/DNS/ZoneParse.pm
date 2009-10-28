@@ -17,8 +17,8 @@ my @ESCAPABLE_CHARACTERS = qw/ ; " \\\\ /;
 $VERSION = '0.99';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
-    %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_last_name,
-    %unparseable_line_callback, %last_parse_error_count,
+    %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
+    %dns_last_name, %unparseable_line_callback, %last_parse_error_count,
 );
 
 my %possibly_quoted = map { $_ => undef } qw/ os cpu text mbox /;
@@ -70,6 +70,7 @@ sub DESTROY {
     delete $dns_srv{$self};
     delete $dns_hinfo{$self};
     delete $dns_rp{$self};
+    delete $dns_loc{$self};
     delete $dns_id{$self};
     delete $dns_last_name{$self};
     delete $unparseable_line_callback{$self};
@@ -92,6 +93,7 @@ sub AUTOLOAD {
      : $method eq 'srv'      ? $dns_srv{$self}
      : $method eq 'hinfo'    ? $dns_hinfo{$self}
      : $method eq 'rp'       ? $dns_rp{$self}
+     : $method eq 'loc'      ? $dns_loc{$self}
      : $method eq 'zonefile' ? $dns_id{$self}->{ZoneFile}
      : $method eq 'origin'   ? $dns_id{$self}->{Origin}
      :                         undef;
@@ -119,6 +121,7 @@ sub dump {
             SRV   => $dns_srv{$self},
             HINFO => $dns_hinfo{$self},
             RP    => $dns_rp{$self},
+            LOC   => $dns_loc{$self},
     } );
 }
 
@@ -204,17 +207,24 @@ ZONEHEADER
     foreach my $o ( @{ $dns_srv{$self} } ) {
         next unless defined $o;
         $self->_escape_chars( $o );
-        $output .= "$o->{name}	$o->{ttl}	$o->{class}	SRV	$o->{priority}	" . "$o->{weight}	$o->{port}	$o->{host}\n";
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	SRV	$o->{priority}	$o->{weight}	$o->{port}	$o->{host}\n";
     }
     foreach my $o ( @{ $dns_hinfo{$self} } ) {
         next unless defined $o;
         $self->_escape_chars( $o );
-        $output .= "$o->{name}	$o->{ttl}	$o->{class}	HINFO	$o->{cpu}	" . "$o->{os}\n";
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	HINFO	$o->{cpu}   $o->{os}\n";
     }
     foreach my $o ( @{ $dns_rp{$self} } ) {
         next unless defined $o;
         $self->_escape_chars( $o );
-        $output .= "$o->{name}	$o->{ttl}	$o->{class}	RP	$o->{mbox}	" . "$o->{text}\n";
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	RP	$o->{mbox}  $o->{text}\n";
+    }
+    foreach my $o ( @{ $dns_loc{$self} } ) {
+        next unless defined $o;
+        $self->_escape_chars( $o );
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	LOC	$o->{d1}	$o->{m1}	$o->{s1}	$o->{NorS}	";
+        $output .= "$o->{d2}	$o->{m2}	$o->{s2}	$o->{EorW}	";
+        $output .= "$o->{alt}	$o->{siz}	$o->{hp}	$o->{vp}\n";
     }
     return $output;
 }
@@ -281,7 +291,7 @@ sub _parse {
     # The above, but adds the literal '.' character.
     my $valid_name_char        = qr/(?:$valid_name_start_char|\.)/o;
     # Like the above, but adds whitespace (space and tabs) too.
-    my $valid_quoted_name_char = qr/(?:$valid_name_start_char|\.| |;|\t)/o;
+    my $valid_quoted_name_char = qr/(?:$valid_name_start_char|[. ;\t()])/o;
     my $valid_name             = qr/$valid_name_start_char(?:$valid_name_char|\.)*/o;
     my $valid_ip6              = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
     my $rr_class               = qr/\b(?:IN|HS|CH)\b/i;
@@ -473,6 +483,44 @@ sub _parse {
                     class => $3,
                     mbox  => $4,
                     text  => $5
+             } );
+        } elsif (
+            /^($valid_name)? \s+
+                 $ttl_cls
+                 LOC \s+
+                 (-?[\d\.]+) \s*
+                 ([\d\.]+) \s*
+                 ([\d\.]+) \s+
+                 ([NS]) \s+
+                 (-?[\d\.]+) \s*
+                 ([\d\.]+) \s*
+                 ([\d\.]+) \s+
+                 ([EW]) \s+
+                 (-?[\d\.]*m?) \s*
+                 ([\d\.]*m?) \s*
+                 ([\d\.]*m?) \s*
+                 ([\d\.]*m?)
+               /ixo
+         )
+        {
+            push @{ $dns_loc{$self} },
+             $self->_massage( {
+                    name  => $1,
+                    ttl   => $2,
+                    class => $3,
+                    d1    => $4,
+                    m1    => $5,
+                    s1    => $6,
+                    NorS  => $7,
+                    d2    => $8,
+                    m2    => $9,
+                    s2    => $10,
+                    EorW  => $11,
+                    alt   => $12,
+                    siz   => $13,
+                    hp    => $14,
+                    vp    => $15,
+
              } );
         } else {
             $last_parse_error_count{$self}++;
@@ -670,7 +718,7 @@ how errors are handled when parsing zone files.
 If you plan to pass a on_unparseable_line callback but do not wish to specify
 an C<$origin>, pass 'undef' as the C<$origin> parameter.
 
-=item a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp()
+=item a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc()
 
 These methods return references to the resource records. For example:
 
@@ -678,8 +726,7 @@ These methods return references to the resource records. For example:
 
 Returns the mx records in an array reference.
 
-A, CNAME, NS, MX, PTR, SRV, TXT, HINFO, and RP records have the following
-properties: 'ttl', 'class', 'host', 'name'.
+All records have the following properties: 'ttl', 'class', 'host', 'name'.
 
 MX records also have a 'priority' property.
 
@@ -691,6 +738,9 @@ descriptive text.
 HINFO records also have 'cpu' and 'os' properties.
 
 RP records also have 'mbox' and 'text' properties.
+
+LOC records also have 'd1', 'm1', 's1', 'NorS', 'd2', 'm2', 's2', 'EorW',
+'alt', 'siz', 'hp', and 'vp', as per RFC 1876.
 
 =item soa()
 
