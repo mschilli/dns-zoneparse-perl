@@ -54,6 +54,8 @@ borrowed4.from.rfc.1876.com.    LOC   32 7 19 S 116 2 25 E 10m
 borrowed5.from.rfc.1876.com.    LOC   ( 42 21 28.764 N 71 00 51.617 W
                                         -44m 2000m )
 
+notborrowed.from.rfc.1876.com.  LOC   32 7 S 116 E -15m 16m 17m 18m
+
 commenttest0                    HINFO   test test2
 commenttest1                    HINFO   test test2 ; comment
 commenttest2                    HINFO   test test2 ; "comment"

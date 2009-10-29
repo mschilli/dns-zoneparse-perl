@@ -356,6 +356,23 @@ sub test_zone {
               'hp' => '',
               'vp' => '',
             },
+            {
+              'name' => 'notborrowed.from.rfc.1876.com.',
+              'ttl' => '',
+              'class' => '',
+              'd1' => '32',
+              'm1' => '7',
+              's1' => '',
+              'NorS' => 'S',
+              'd2' => '116',
+              'm2' => '',
+              's2' => '',
+              'EorW' => 'E',
+              'alt' => '-15m',
+              'siz' => '16m',
+              'hp' => '17m',
+              'vp' => '18m',
+            },
         ],
         'LOC records parsed OK'
     );

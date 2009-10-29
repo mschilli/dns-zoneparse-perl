@@ -489,13 +489,13 @@ sub _parse {
                  $ttl_cls
                  LOC \s+
                  (-?[\d\.]+) \s*
-                 ([\d\.]+) \s*
-                 ([\d\.]+) \s+
+                 ([\d\.]*) \s*
+                 ([\d\.]*) \s+
                  ([NS]) \s+
                  (-?[\d\.]+) \s*
-                 ([\d\.]+) \s*
-                 ([\d\.]+) \s+
-                 ([EW]) \s+
+                 ([\d\.]*) \s*
+                 ([\d\.]*) \s+
+                 ([EW]) \s*
                  (-?[\d\.]*m?) \s*
                  ([\d\.]*m?) \s*
                  ([\d\.]*m?) \s*
@@ -741,6 +741,10 @@ RP records also have 'mbox' and 'text' properties.
 
 LOC records also have 'd1', 'm1', 's1', 'NorS', 'd2', 'm2', 's2', 'EorW',
 'alt', 'siz', 'hp', and 'vp', as per RFC 1876.
+
+If there are no records of a given type in the zone, the call will croak with
+an error message about an invalid method. (This is not an ideal behavior, but
+has been kept for backwards compatibility.)
 
 =item soa()
 
