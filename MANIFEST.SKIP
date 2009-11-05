@@ -1,4 +1,5 @@
 ^blib
+^.git
 ^bak
 ~$
 (?:^|/)[Mm]akefile(?:\.old)?$
