@@ -1,23 +1,27 @@
+######################################################################
+    DNS::ZoneParse 0.99
+######################################################################
+
 NAME
     DNS::ZoneParse - Parse and manipulate DNS Zone Files.
 
 SYNOPSIS
         use DNS::ZoneParse;
-        
-    my $zonefile = DNS::ZoneParse->new("/path/to/dns/zonefile.db", $origin);
-        
-    # Get a reference to the MX records
+    
+        my $zonefile = DNS::ZoneParse->new("/path/to/dns/zonefile.db", $origin);
+    
+        # Get a reference to the MX records
         my $mx = $zonefile->mx;
-        
-    # Change the first mailserver on the list
+    
+        # Change the first mailserver on the list
         $mx->[0] = { host => 'mail.localhost.com',
                      priority => 10,
                      name => '@' };
-        
-    # update the serial number
+    
+        # update the serial number
         $zonefile->new_serial();
-        
-    # write the new zone file to disk 
+    
+        # write the new zone file to disk 
         my $newzone;
         open($newzone, '>', '/path/to/dns/zonefile.db') or die "error";
         print $newzone $zonefile->output();
@@ -168,20 +172,20 @@ DESCRIPTION
 
         use strict;
         use DNS::ZoneParse;
-        
-    my $zonefile = DNS::ZoneParse->new("/path/to/zonefile.db");
-        
-    print "Current A Records\n";
+    
+        my $zonefile = DNS::ZoneParse->new("/path/to/zonefile.db");
+    
+        print "Current A Records\n";
         my $a_records = $zonefile->a();
-        
-    foreach my $record (@$a_records) {
+    
+        foreach my $record (@$a_records) {
             print "$record->{name} resolves at $record->{host}\n";
         }
-        
-    push (@$a_records, { name => 'new', class => 'IN',
+    
+        push (@$a_records, { name => 'new', class => 'IN',
                              host => '127.0.0.1', ttl => '' });
-        
-    $zonefile->new_serial();
+    
+        $zonefile->new_serial();
         my $newfile = $zonefile->output();
 
     This script will convert a DNS Zone file to an XML file using
