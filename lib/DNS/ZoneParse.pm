@@ -289,9 +289,9 @@ sub _parse {
      . join( '|', map { "\\\\$_" } @ESCAPABLE_CHARACTERS ) . ')';
 
     # The above, but adds the literal '.' character.
-    my $valid_name_char        = qr/(?:$valid_name_start_char|\.)/o;
+    my $valid_name_char        = qr/(?:$valid_name_start_char|[\.\\])/o;
     # Like the above, but adds whitespace (space and tabs) too.
-    my $valid_quoted_name_char = qr/(?:$valid_name_start_char|[. ;\t()])/o;
+    my $valid_quoted_name_char = qr/(?:$valid_name_start_char|[. ;\t()\\])/o;
     my $valid_name             = qr/$valid_name_start_char(?:$valid_name_char|\.)*/o;
     my $valid_ip6              = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
     my $rr_class               = qr/\b(?:IN|HS|CH)\b/i;
@@ -307,6 +307,7 @@ sub _parse {
         # _clean_records.
         next if /^\s*$/;
 
+        eval {
         if (
             /^($valid_name)? \s+         # host
               $ttl_cls                   # ttl & class
@@ -520,9 +521,13 @@ sub _parse {
                     siz   => $13,
                     hp    => $14,
                     vp    => $15,
-
              } );
         } else {
+            die "\n";
+        }
+
+        };
+        if ( $@ ) {
             $last_parse_error_count{$self}++;
             if ( $unparseable_line_callback{$self} ) {
                 $unparseable_line_callback{$self}->( $self, $_ );
@@ -596,18 +601,37 @@ sub _clean_records {
 }
 
 sub _massage {
-    my $self   = shift;
-    my $record = shift;
+    my ( $self, $record ) = @_;
 
     my $last_name = \$dns_last_name{$self};
 
-    foreach ( keys %$record ) {
-        $record->{$_} = '' unless defined $record->{$_};
-        $record->{$_} = uc $record->{$_} if $_ eq 'class';
-        $record->{$_} =~ s/\\(.)/$1/g;
-        if ( exists $possibly_quoted{$_} ) {
-            $record->{$_} =~ s/^"//;
-            $record->{$_} =~ s/"$//;
+    foreach my $r ( keys %$record ) {
+        $record->{$r} = '' unless defined $record->{$r};
+        $record->{$r} = uc $record->{$r} if $r eq 'class';
+        if ( exists $possibly_quoted{$r} ) {
+            ( $record->{$r} =~ s/^"// ) && ( $record->{$r} =~ s/"$// );
+        }
+
+        # We return email addresses just as they are in the file... for better
+        # or worse.
+        if ( $r ne 'email' && $r ne 'mbox' ) {
+            while ( $record->{$r} =~ m/\\/g ) {
+                my $pos = pos( $record->{$r} );
+                my $escape_char = substr( $record->{$r}, $pos, 1 );
+                if ( $escape_char =~ /\d/ ) {
+                    $escape_char = substr( $record->{$r}, $pos, 3 );
+                    # Max oct value that converts to 255 in dec.
+                    if ( ( $escape_char =~ /^\d{3}$/ ) && ( $escape_char <= 377 ) ) {
+                        substr( $record->{$r}, $pos - 1, 4 ) = chr( oct( $escape_char ) );
+                    } else {
+                        die "\n";
+                    }
+                } else {
+                    # Not followed by a digit, so just remove the backslash.
+                    substr( $record->{$r}, $pos - 1, 2 ) = $escape_char;
+                }
+                pos( $record->{$r} ) = $pos;
+            }
         }
     }
 

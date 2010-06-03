@@ -2,6 +2,7 @@ use strict;
 BEGIN { $^W++ }
 use Test::More tests => 49;
 use File::Spec::Functions ':ALL';
+use lib '../lib/';
 
 # See if the module compiles - it should...
 require_ok( 'DNS::ZoneParse' );
@@ -57,7 +58,7 @@ sub test_zone {
             'ttl'        => '1H',
             'primary'    => 'ns0.dns-zoneparse-test.net.',
             'origin'     => '@',
-            'email'      => 'support.dns-zoneparse-test.net.',
+            'email'      => 'support\\.contact.dns-zoneparse-test.net.',
             'retry'      => '3600',
             'refresh'    => '10800',
             'expire'     => '691200'
