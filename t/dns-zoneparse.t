@@ -295,7 +295,7 @@ sub test_zone {
         $zf->srv,
         [
             {
-                'name'     => 'srvtest.a',
+                'name'     => 'srvtest1.a',
                 'class'    => 'IN',
                 'ttl'      => '',
                 'priority' => 11,
@@ -303,6 +303,16 @@ sub test_zone {
                 'port'     => 33,
                 'host'     => 'avalidname',
                 'ORIGIN'   => 'dns-zoneparse-test.net.',
+            },
+            {
+                'name'     => 'srvtest2',
+                'class'    => 'IN',
+                'ttl'      => '',
+                'priority' => 11,
+                'weight'   => 22,
+                'port'     => 33,
+                'host'     => 'avalidname',
+                'ORIGIN'   => 'a.dns-zoneparse-test.net.',
             },
         ],
         'SRV records parsed OK',
