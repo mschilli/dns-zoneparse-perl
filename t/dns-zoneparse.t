@@ -14,9 +14,9 @@ my $zone_data = do { local $/; <$FH> };
 close $FH;
 
 sub on_parse_fail {
-    my ( $dns, $line ) = @_;
+    my ( $dns, $line, $reason ) = @_;
     if ( $line !~ /this should fail/ ) {
-        warn "Parse failure on line: $line\n";
+        warn "Parse failure ($reason) on line: $line\n";
     }
 }
 

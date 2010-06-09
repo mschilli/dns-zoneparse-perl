@@ -18,7 +18,8 @@ $VERSION = '0.99';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
-    %dns_last_name, %unparseable_line_callback, %last_parse_error_count,
+    %dns_last_name, %dns_last_origin,
+    %unparseable_line_callback, %last_parse_error_count,
 );
 
 my %possibly_quoted = map { $_ => undef } qw/ os cpu text mbox /;
@@ -33,6 +34,7 @@ sub new {
     if ( ref $unparseable_callback eq 'CODE' ) {
         $unparseable_line_callback{$self} = $unparseable_callback;
     }
+
     $self->_initialize();
     $self->_load_file( $file, $origin ) if $file;
     return $self;
@@ -73,6 +75,7 @@ sub DESTROY {
     delete $dns_loc{$self};
     delete $dns_id{$self};
     delete $dns_last_name{$self};
+    delete $dns_last_origin{$self};
     delete $unparseable_line_callback{$self};
     delete $last_parse_error_count{$self};
 }
@@ -247,7 +250,8 @@ sub _initialize {
     $dns_srv{$self}       = [];
     $dns_hinfo{$self}     = [];
     $dns_rp{$self}        = [];
-    $dns_last_name{$self} = '@';
+    $dns_last_name{$self} = undef;
+    $dns_last_origin{$self} = undef;
     $last_parse_error_count{$self} = 0;
     return 1;
 }
@@ -259,8 +263,9 @@ sub _load_file {
         $zone_contents = $$zonefile;
     } else {
         my $inZONE;
-        if ( open( $inZONE, $zonefile ) ) {
-            $zone_contents = do { local $/; <$inZONE> };
+        if ( open( $inZONE, '<', $zonefile ) ) {
+            local $/;
+            $zone_contents = <$inZONE>;
             close( $inZONE );
         } else {
             croak qq[DNS::ZoneParse Could not open input file: "$zonefile":$!];
@@ -275,12 +280,32 @@ sub _parse {
     my ( $self, $zonefile, $contents, $origin ) = @_;
     $self->_initialize();
 
-    my $chars = qr/[a-z\-\.0-9]+/i;
-    $contents =~ /Database file ($chars)( dns)? for ($chars) zone/sio;
-    $dns_id{$self} = $self->_massage( {
-            ZoneFile => $1 || $zonefile,
-            Origin   => $3 || $origin,
-    } );
+    # Here's how we auto-detect the zonefile and origin. Note, the zonefile is
+    # only used to print out a comment in the file, so its okay if we're
+    # inaccurate. First, prefer what the user configures. Next, try to read a
+    # comment we would have written if we wrote the file out in the past.
+    # Finally, pick up any SOA or $ORIGIN statements present in the file.
+    if ( ref( $zonefile ) eq 'SCALAR' ) { $zonefile = ''; }
+
+    if ( !$origin || !$zonefile ) {
+        my $chars = qr/[a-z\-\.0-9]+/i;
+        $contents =~ /^\s*;\s*Database file ($chars)(\.dns )?for ($chars) zone/im;
+        if ( !$origin && $3 ) { $origin = $3; }
+        if ( !$zonefile && $1 ) { $zonefile = $1; }
+    }
+
+    if ( !$zonefile ) {
+        $zonefile = 'unknown';
+    }
+
+    if ( !$origin ) {
+        $origin = '';
+    }
+
+    $dns_id{$self} = {
+        ZoneFile => $zonefile,
+        Origin   => $origin,
+    };
 
     my $records = $self->_clean_records( $contents );
 
@@ -298,16 +323,19 @@ sub _parse {
     my $rr_type                = qr/\b(?:NS|A|CNAME)\b/i;
     my $rr_ttl                 = qr/(?:\d+[wdhms]?)+/i;
     my $ttl_cls                = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
-    my $last_name              = $dns_id{$self}->{Origin} || '@';
 
     foreach ( @$records ) {
-        TRACE( "parsing line <$_>" );
+        #TRACE( "parsing line <$_>" );
 
         # It's faster to skip blank lines here than to remove them inside
         # _clean_records.
         next if /^\s*$/;
 
+        # The below is inside of an eval block to catch possible errors
+        # found inside _massage and propagate them up properly.
         eval {
+        local $SIG{__DIE__} = 'DEFAULT';
+
         if (
             /^($valid_name)? \s+         # host
               $ttl_cls                   # ttl & class
@@ -391,14 +419,12 @@ sub _parse {
                  $ttl_cls
                  SOA \s+
                  ($valid_name) \s+
-                 ($valid_name) \s*    # Unsure if a space is required here.
-                 \(?\s*               # Or here.
-                     ($rr_ttl) \s+
-                     ($rr_ttl) \s+
-                     ($rr_ttl) \s+
-                     ($rr_ttl) \s+
-                     ($rr_ttl) \s*
-                 \)?
+                 ($valid_name) \s+
+                 ($rr_ttl) \s+
+                 ($rr_ttl) \s+
+                 ($rr_ttl) \s+
+                 ($rr_ttl) \s+
+                 ($rr_ttl)
                /ixo
          )
         {
@@ -415,6 +441,15 @@ sub _parse {
                     expire     => $9,
                     minimumTTL => $10
             } );
+
+            if ( !$origin ) {
+                $origin = $1;
+                $dns_id{$self} = {
+                    ZoneFile => $zonefile,
+                    Origin   => $origin,
+                };
+            }
+
         } elsif (
             /^($valid_name)? \s+
                 $ttl_cls
@@ -523,16 +558,17 @@ sub _parse {
                     vp    => $15,
              } );
         } else {
-            die "\n";
+            die "Unknown record type\n";
         }
 
-        };
+        }; # End of eval block.
         if ( $@ ) {
+            chomp $@;
             $last_parse_error_count{$self}++;
             if ( $unparseable_line_callback{$self} ) {
-                $unparseable_line_callback{$self}->( $self, $_ );
+                $unparseable_line_callback{$self}->( $self, $_, $@ );
             } else {
-                carp "Unparseable line\n  $_\n";
+                carp "Unparseable line ($@)\n  $_\n";
             }
         }
     }
@@ -603,17 +639,20 @@ sub _clean_records {
 sub _massage {
     my ( $self, $record ) = @_;
 
-    my $last_name = \$dns_last_name{$self};
-
+    if ( $record->{'class'} ) {
+        $record->{'class'} = uc $record->{'class'};
+    }
     foreach my $r ( keys %$record ) {
-        $record->{$r} = '' unless defined $record->{$r};
-        $record->{$r} = uc $record->{$r} if $r eq 'class';
+        if ( !defined $record->{$r} ) {
+            $record->{$r} = '';
+            next;
+        }
         if ( exists $possibly_quoted{$r} ) {
             ( $record->{$r} =~ s/^"// ) && ( $record->{$r} =~ s/"$// );
         }
 
         # We return email addresses just as they are in the file... for better
-        # or worse.
+        # or worse (mostly for backwards compatability reasons).
         if ( $r ne 'email' && $r ne 'mbox' ) {
             while ( $record->{$r} =~ m/\\/g ) {
                 my $pos = pos( $record->{$r} );
@@ -624,10 +663,11 @@ sub _massage {
                     if ( ( $escape_char =~ /^\d{3}$/ ) && ( $escape_char <= 377 ) ) {
                         substr( $record->{$r}, $pos - 1, 4 ) = chr( oct( $escape_char ) );
                     } else {
-                        die "\n";
+                        die "Invalid escape sequence\n";
                     }
                 } else {
                     # Not followed by a digit, so just remove the backslash.
+                    # Like BIND does...
                     substr( $record->{$r}, $pos - 1, 2 ) = $escape_char;
                 }
                 pos( $record->{$r} ) = $pos;
@@ -635,14 +675,31 @@ sub _massage {
         }
     }
 
-    return $record unless exists $record->{name};
-    if ( length $record->{name} ) {
-        $$last_name = $record->{name};
+    # This is silly, but we don't know what type of record we are massaging at
+    # this point. We can detect an SOA record because it's the only type that
+    # supplies this value, which is what we need to do here to properly set
+    # the owner.
+    if ( exists $record->{'minimumTTL'} ) {
+        $dns_last_name{$self} = $record->{'origin'};
+        $dns_last_origin{$self} = $record->{'origin'};
     } else {
-        TRACE( "Record has no name, using last name" );
-        $record->{name} = $$last_name;
+        if ( $record->{'name'} ) {
+            $dns_last_name{$self} = $record->{'name'};
+        } else {
+            #TRACE( "Record has no name, using last name" );
+            if ( !$dns_last_name{$self} ) {
+                die "No current owner name\n";
+            }
+            $record->{'name'} = $dns_last_name{$self};
+        }
+
+        if ( !$dns_last_origin{$self} ) {
+            die "Unknown origin\n";
+        } else {
+            $record->{'origin'} = $dns_last_origin{$self};
+        }
     }
-    DUMP( "Record parsed", $record );
+    #DUMP( "Record parsed", $record );
     return $record;
 }
 
