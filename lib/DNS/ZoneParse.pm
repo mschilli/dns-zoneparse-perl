@@ -6,6 +6,7 @@ package DNS::ZoneParse;
 use 5.006;
 use Storable 'dclone';
 use POSIX 'strftime';
+use File::Basename;
 use vars qw($VERSION);
 use strict;
 use Carp;
@@ -288,17 +289,26 @@ sub _parse {
     if ( ref( $zonefile ) eq 'SCALAR' ) { $zonefile = ''; }
 
     if ( !$origin || !$zonefile ) {
-        my $chars = qr/[a-z\-\.0-9]+/i;
-        $contents =~ /^\s*;\s*Database file ($chars)(\.dns )?for ($chars) zone/im;
+        # I don't know why the ( dns)? capture is there, perhaps at one point
+        # this module wrote a different header comment? I'll leave it as to
+        # preserve whatever backwards compatability this affords us...
+        $contents =~ /^\s*;\s*Database file (\S+)( dns)? for (\S+) zone/im;
         if ( !$origin && $3 ) { $origin = $3; }
         if ( !$zonefile && $1 ) { $zonefile = $1; }
     }
 
-    if ( !$zonefile ) {
+    if ( $zonefile ) {
+        $zonefile = basename( $zonefile );
+    } else {
         $zonefile = 'unknown';
     }
 
-    if ( !$origin ) {
+    if ( $origin ) {
+        # A trite way of insuring there is a trailing dot on the origin. It's
+        # really important you supply a trailing . in an origin when you mean
+        # it.
+        $origin =~ s/([^.])$/$1./;
+    } else {
         $origin = '';
     }
 
@@ -557,6 +567,16 @@ sub _parse {
                     hp    => $14,
                     vp    => $15,
              } );
+
+        } elsif ( /^\$ORIGIN\s+($valid_name)/io ) {
+            my $new_origin = $1;
+            # We could track each origins origin, all the way down, but what
+            # would that get us? Madness, surely.
+            if ( $new_origin !~ /\.$/ ) {
+                $new_origin .= '.' . $dns_last_origin{$self};
+            }
+            $dns_last_origin{$self} = $new_origin;
+
         } else {
             die "Unknown record type\n";
         }
@@ -681,7 +701,21 @@ sub _massage {
     # the owner.
     if ( exists $record->{'minimumTTL'} ) {
         $dns_last_name{$self} = $record->{'origin'};
-        $dns_last_origin{$self} = $record->{'origin'};
+
+        if ( $record->{'origin'} eq '@' ) {
+            $dns_last_origin{$self} = $dns_id{$self}->{'Origin'};
+        } else {
+            my $new_origin = $record->{'origin'};
+
+            # Similar to above, it's origins all the way down. Don't bother
+            # tracking each separately, just collapse them all into the
+            # current origin.
+            if ( $new_origin !~ /\.$/ ) {
+                $new_origin .= '.' . $dns_last_origin{$self};
+            }
+            $dns_last_origin{$self} = $new_origin;
+        }
+        $record->{'ORIGIN'} = $dns_last_origin{$self};
     } else {
         if ( $record->{'name'} ) {
             $dns_last_name{$self} = $record->{'name'};
@@ -696,7 +730,7 @@ sub _massage {
         if ( !$dns_last_origin{$self} ) {
             die "Unknown origin\n";
         } else {
-            $record->{'origin'} = $dns_last_origin{$self};
+            $record->{'ORIGIN'} = $dns_last_origin{$self};
         }
     }
     #DUMP( "Record parsed", $record );
