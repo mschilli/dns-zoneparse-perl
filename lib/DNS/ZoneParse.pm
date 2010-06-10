@@ -15,7 +15,7 @@ use Carp;
 # the backslash, here.
 my @ESCAPABLE_CHARACTERS = qw/ ; " \\\\ /;
 
-$VERSION = '0.99';
+$VERSION = '1.00';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
@@ -149,12 +149,19 @@ sub new_serial {
 sub output {
     my $self     = shift;
     my $zone_ttl = $dns_soa{$self}{ttl} ? "\$TTL $dns_soa{$self}{ttl}" : '';
-    my $output   = "";
-    $output .= <<ZONEHEADER;
+    my $output   = '';
+    $output .= <<ZONEHEADER1;
 ;
 ;  Database file $dns_id{$self}->{ZoneFile} for $dns_id{$self}->{Origin} zone.
 ;	Zone version: $dns_soa{$self}->{serial}
 ;
+ZONEHEADER1
+
+    if ( $dns_soa{$self}->{'ORIGIN'} ne $dns_soa{$self}->{'origin'} ) {
+        $output .= "\n\$ORIGIN $dns_soa{$self}->{'ORIGIN'}\n\n";
+    }
+
+    $output .= <<ZONEHEADER2;
 
 $zone_ttl
 $dns_soa{$self}->{origin}		$dns_soa{$self}->{ttl}	IN  SOA  $dns_soa{$self}->{primary} $dns_soa{$self}->{email} (
@@ -168,7 +175,7 @@ $dns_soa{$self}->{origin}		$dns_soa{$self}->{ttl}	IN  SOA  $dns_soa{$self}->{pri
 ; Zone NS Records
 ;
 
-ZONEHEADER
+ZONEHEADER2
 
     my @origins_to_process = grep {
         if ( $_ eq $dns_soa{$self}->{'ORIGIN'} ) {
@@ -733,20 +740,35 @@ sub _massage {
         $dns_last_name{$self} = $record->{'origin'};
 
         if ( $record->{'origin'} eq '@' ) {
-            $dns_last_origin{$self} = $dns_id{$self}->{'Origin'};
+            # We encountered a @ SOA line without an origin directive above
+            # it, so we will try and guess the origin.
+            if ( !$dns_last_origin{$self} ) {
+                if ( !$dns_id{$self}->{'Origin'} ) {
+                    die "Unknown origin\n";
+                }
+                $dns_last_origin{$self} = $dns_id{$self}->{'Origin'};
+            }
+            $record->{'ORIGIN'} = $dns_last_origin{$self};
         } else {
             my $new_origin = $record->{'origin'};
 
             # Similar to above, it's origins all the way down. Don't bother
             # tracking each separately, just collapse them all into the
             # current origin.
-            if ( $new_origin !~ /\.$/ ) {
-                $new_origin .= '.' . $dns_last_origin{$self};
+            if ( $new_origin =~ /\.$/ ) {
+                # If no one has set an $ORIGIN before, we need to use the SOA
+                # line to do it.
+                if ( !$dns_last_origin{$self} ) {
+                    $dns_last_origin{$self} = $new_origin;
+                }
             }
-            $dns_last_origin{$self} = $new_origin;
+            # Now we have a valid ORIGIN for this SOA, so assign it.
+            $record->{'ORIGIN'} = $dns_last_origin{$self};
         }
-        $record->{'ORIGIN'} = $dns_last_origin{$self};
-        $dns_found_origins{$self}->{ $dns_last_origin{$self} } = 1;
+        # Alright, make sure we know we found this origin.
+        $dns_found_origins{$self}->{ $record->{'ORIGIN'} } = 1;
+
+    # Not an SOA record.
     } else {
         if ( $record->{'name'} ) {
             $dns_last_name{$self} = $record->{'name'};
@@ -872,7 +894,8 @@ These methods return references to the resource records. For example:
 
 Returns the mx records in an array reference.
 
-All records have the following properties: 'ttl', 'class', 'host', 'name'.
+All records (except SOA) have the following properties: 'ttl', 'class',
+'host', 'name', 'ORIGIN'.
 
 MX records also have a 'priority' property.
 
@@ -892,11 +915,13 @@ If there are no records of a given type in the zone, the call will croak with
 an error message about an invalid method. (This is not an ideal behavior, but
 has been kept for backwards compatibility.)
 
+The 'ORIGIN' property is the fully-qualified origin of the record.
+
 =item soa()
 
 Returns a hash reference with the following properties:
 'serial', 'origin', 'primary', 'refresh', 'retry', 'ttl', 'minimumTTL',
-'email', 'expire'
+'email', 'expire'.
 
 =item dump
 
