@@ -19,7 +19,7 @@ $VERSION = '0.99';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
-    %dns_last_name, %dns_last_origin,
+    %dns_last_name, %dns_last_origin, %dns_found_origins,
     %unparseable_line_callback, %last_parse_error_count,
 );
 
@@ -77,6 +77,7 @@ sub DESTROY {
     delete $dns_id{$self};
     delete $dns_last_name{$self};
     delete $dns_last_origin{$self};
+    delete $dns_found_origins{$self};
     delete $unparseable_line_callback{$self};
     delete $last_parse_error_count{$self};
 }
@@ -169,67 +170,94 @@ $dns_soa{$self}->{origin}		$dns_soa{$self}->{ttl}	IN  SOA  $dns_soa{$self}->{pri
 
 ZONEHEADER
 
+    my @origins_to_process = grep {
+        if ( $_ eq $dns_soa{$self}->{'ORIGIN'} ) {
+            0;
+        } else {
+            1;
+        }
+    } keys %{ $dns_found_origins{$self} };
+    unshift @origins_to_process, $dns_soa{$self}->{'ORIGIN'};
+
+    foreach my $process_this_origin ( @origins_to_process ) {
+        if ( $process_this_origin ne $dns_soa{$self}->{'ORIGIN'} ) {
+            $output .= "\n\;\n\; $process_this_origin records\n\;\n\n";
+            $output .= "\$ORIGIN $process_this_origin\n\n";
+        }
+
     foreach my $o ( @{ $dns_ns{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	NS	$o->{host}\n";
     }
 
-    $output .= "\n\;\n\; Zone MX Records\n\;\n\n";
     foreach my $o ( @{ $dns_mx{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	MX	$o->{priority} " . " $o->{host}\n";
     }
 
-    $output .= "\n\;\n\; Zone Records\n\;\n\n";
     foreach my $o ( @{ $dns_a{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	A	$o->{host}\n";
     }
     foreach my $o ( @{ $dns_cname{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	CNAME	$o->{host}\n";
     }
     foreach my $o ( @{ $dns_a4{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	AAAA	$o->{host}\n";
     }
     foreach my $o ( @{ $dns_txt{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= qq[$o->{name}	$o->{ttl} $o->{class} TXT	"$o->{text}"\n];
     }
     foreach my $o ( @{ $dns_ptr{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	PTR		$o->{host}\n";
     }
     foreach my $o ( @{ $dns_srv{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	SRV	$o->{priority}	$o->{weight}	$o->{port}	$o->{host}\n";
     }
     foreach my $o ( @{ $dns_hinfo{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	HINFO	$o->{cpu}   $o->{os}\n";
     }
     foreach my $o ( @{ $dns_rp{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	RP	$o->{mbox}  $o->{text}\n";
     }
     foreach my $o ( @{ $dns_loc{$self} } ) {
         next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	LOC	$o->{d1}	$o->{m1}	$o->{s1}	$o->{NorS}	";
         $output .= "$o->{d2}	$o->{m2}	$o->{s2}	$o->{EorW}	";
         $output .= "$o->{alt}	$o->{siz}	$o->{hp}	$o->{vp}\n";
     }
+
+    }
+
     return $output;
 }
 
@@ -253,6 +281,7 @@ sub _initialize {
     $dns_rp{$self}        = [];
     $dns_last_name{$self} = undef;
     $dns_last_origin{$self} = undef;
+    $dns_found_origins{$self} = {};
     $last_parse_error_count{$self} = 0;
     return 1;
 }
@@ -576,6 +605,7 @@ sub _parse {
                 $new_origin .= '.' . $dns_last_origin{$self};
             }
             $dns_last_origin{$self} = $new_origin;
+            $dns_found_origins{$self}->{ $new_origin } = 1;
 
         } else {
             die "Unknown record type\n";
@@ -716,6 +746,7 @@ sub _massage {
             $dns_last_origin{$self} = $new_origin;
         }
         $record->{'ORIGIN'} = $dns_last_origin{$self};
+        $dns_found_origins{$self}->{ $dns_last_origin{$self} } = 1;
     } else {
         if ( $record->{'name'} ) {
             $dns_last_name{$self} = $record->{'name'};
