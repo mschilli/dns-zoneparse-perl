@@ -36,6 +36,7 @@ test_zone( $str_zonefile );
 
 my $serialized = $str_zonefile->output();
 warn "starting from output test";
+die $serialized;
 $str_zonefile = DNS::ZoneParse->new( \$serialized, undef, \&on_parse_fail );
 ok( $str_zonefile,                                'new obj from output' );
 ok( $str_zonefile->last_parse_error_count() == 0, "caught all errors (none!)" );
@@ -85,7 +86,6 @@ sub test_zone {
                 'name'   => 'localhost',
                 'class'  => 'IN',
                 'host'   => '127.0.0.1',
-                'ORIGIN' => 'dns-zoneparse-test.net.',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
