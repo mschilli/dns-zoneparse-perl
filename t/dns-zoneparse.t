@@ -1,6 +1,6 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 49;
+use Test::More tests => 52;
 use File::Spec::Functions ':ALL';
 use lib '../lib/';
 
@@ -36,7 +36,6 @@ test_zone( $str_zonefile );
 
 my $serialized = $str_zonefile->output();
 warn "starting from output test";
-die $serialized;
 $str_zonefile = DNS::ZoneParse->new( \$serialized, undef, \&on_parse_fail );
 ok( $str_zonefile,                                'new obj from output' );
 ok( $str_zonefile->last_parse_error_count() == 0, "caught all errors (none!)" );
@@ -53,6 +52,8 @@ sub test_zone {
     ok( $newserial = $serial + 1, 'new_serial( int )' );
     $serial = $zf->new_serial();
     ok( $serial > $newserial, 'new_serial()' );
+
+    ok( $zf->fqname( $zf->soa ) eq $zf->soa->{'ORIGIN'}, 'fqname test' );
 
     is_deeply(
         $zf->soa,

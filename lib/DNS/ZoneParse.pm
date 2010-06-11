@@ -276,12 +276,18 @@ sub fqname {
         if ( ( $record_ref->{'origin'} eq '@' ) || ( $record_ref->{'origin'} =~ /\.$/ ) ) {
             return $record_ref->{'ORIGIN'};
         } else {
+            if ( $record_ref->{'ORIGIN'} =~ /^\./ ) {
+                return $record_ref->{'origin'} . $record_ref->{'ORIGIN'};
+            }
             return $record_ref->{'origin'} . '.' . $record_ref->{'ORIGIN'};
         }
     } else {
         if ( $record_ref->{'name'} eq '@' ) {
             return $record_ref->{'ORIGIN'};
         } else {
+            if ( $record_ref->{'ORIGIN'} =~ /^\./ ) {
+                return $record_ref->{'name'} . $record_ref->{'ORIGIN'};
+            }
             return $record_ref->{'name'} . '.' . $record_ref->{'ORIGIN'};
         }
     }
@@ -623,12 +629,16 @@ sub _parse {
                     vp    => $15,
              } );
 
-        } elsif ( /^\$ORIGIN\s+($valid_name)/io ) {
+        } elsif ( /^\$ORIGIN\s+($valid_name_char+)/io ) {
             my $new_origin = $1;
             # We could track each origins origin, all the way down, but what
             # would that get us? Madness, surely.
             if ( $new_origin !~ /\.$/ ) {
-                $new_origin .= '.' . $dns_last_origin{$self};
+                if ( $dns_last_origin{$self} =~ /^\./ ) {
+                    $new_origin .= $dns_last_origin{$self};
+                } else {
+                    $new_origin .= '.' . $dns_last_origin{$self};
+                }
             }
             $dns_last_origin{$self} = $new_origin;
             $dns_found_origins{$self}->{ $new_origin } = 1;
