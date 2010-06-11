@@ -203,7 +203,7 @@ ZONEHEADER2
         next unless defined $o;
         next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
-        $output .= "$o->{name}	$o->{ttl}	$o->{class}	MX	$o->{priority} " . " $o->{host}\n";
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	MX	$o->{priority} $o->{host}\n";
     }
 
     foreach my $o ( @{ $dns_a{$self} } ) {
@@ -266,6 +266,25 @@ ZONEHEADER2
     }
 
     return $output;
+}
+
+sub fqname {
+    my ( $self, $record_ref ) = @_;
+
+    # Is this an SOA record?
+    if ( $record_ref->{'origin'} ) {
+        if ( ( $record_ref->{'origin'} eq '@' ) || ( $record_ref->{'origin'} =~ /\.$/ ) ) {
+            return $record_ref->{'ORIGIN'};
+        } else {
+            return $record_ref->{'origin'} . '.' . $record_ref->{'ORIGIN'};
+        }
+    } else {
+        if ( $record_ref->{'name'} eq '@' ) {
+            return $record_ref->{'ORIGIN'};
+        } else {
+            return $record_ref->{'name'} . '.' . $record_ref->{'ORIGIN'};
+        }
+    }
 }
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -901,7 +920,7 @@ MX records also have a 'priority' property.
 
 SRV records also have 'priority', 'weight' and 'port' properties.
 
-TXT records also have a 'text' property representing the record's "txt-data"
+TXT records also have a 'text' property representing the record's 'txt-data'
 descriptive text.
 
 HINFO records also have 'cpu' and 'os' properties.
@@ -915,7 +934,10 @@ If there are no records of a given type in the zone, the call will croak with
 an error message about an invalid method. (This is not an ideal behavior, but
 has been kept for backwards compatibility.)
 
-The 'ORIGIN' property is the fully-qualified origin of the record.
+The 'ORIGIN' property is the fully-qualified origin of the record. See
+L<fqname> for details on constructing a fully qualified domain name. Note: for
+SOA records, the 'ORIGIN' will match the 'origin' property when the SOA record
+is specified as fully qualified.
 
 =item soa()
 
@@ -928,6 +950,14 @@ Returns a hash reference with the following properties:
 Returns a copy of the datastructute that stores all the resource records. This
 might be useful if you want to quickly transform the data into another format,
 such as XML.
+
+=item fqname
+
+Takes a single parameter, a hash reference containing a record.
+
+Returns the fully qualified name of this record, with a trailing '.'. In most
+cases this is as simple as concatinating the 'name' and 'ORIGIN' with a '.',
+but with special handling for SOA records and records with an '@' name.
 
 =item new_serial
 

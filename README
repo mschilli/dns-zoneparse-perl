@@ -78,15 +78,15 @@ DESCRIPTION
 
         Returns the mx records in an array reference.
 
-        All records have the following properties: 'ttl', 'class', 'host',
-        'name'.
+        All records (except SOA) have the following properties: 'ttl',
+        'class', 'host', 'name', 'ORIGIN'.
 
         MX records also have a 'priority' property.
 
         SRV records also have 'priority', 'weight' and 'port' properties.
 
         TXT records also have a 'text' property representing the record's
-        "txt-data" descriptive text.
+        'txt-data' descriptive text.
 
         HINFO records also have 'cpu' and 'os' properties.
 
@@ -99,15 +99,28 @@ DESCRIPTION
         croak with an error message about an invalid method. (This is not an
         ideal behavior, but has been kept for backwards compatibility.)
 
+        The 'ORIGIN' property is the fully-qualified origin of the record.
+        See fqname for details on constructing a fully qualified domain
+        name. Note: for SOA records, the 'ORIGIN' will match the 'origin'
+        property when the SOA record is specified as fully qualified.
+
     soa()
         Returns a hash reference with the following properties: 'serial',
         'origin', 'primary', 'refresh', 'retry', 'ttl', 'minimumTTL',
-        'email', 'expire'
+        'email', 'expire'.
 
     dump
         Returns a copy of the datastructute that stores all the resource
         records. This might be useful if you want to quickly transform the
         data into another format, such as XML.
+
+    fqname
+        Takes a single parameter, a hash reference containing a record.
+
+        Returns the fully qualified name of this record, with a trailing
+        '.'. In most cases this is as simple as concatinating the 'name' and
+        'ORIGIN' with a '.', but with special handling for SOA records and
+        records with an '@' name.
 
     new_serial
         "new_serial()" incriments the Zone serial number. It will generate a
