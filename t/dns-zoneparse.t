@@ -1,6 +1,6 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 52;
+use Test::More tests => 58;
 use File::Spec::Functions ':ALL';
 use lib '../lib/';
 
@@ -53,7 +53,9 @@ sub test_zone {
     $serial = $zf->new_serial();
     ok( $serial > $newserial, 'new_serial()' );
 
-    ok( $zf->fqname( $zf->soa ) eq $zf->soa->{'ORIGIN'}, 'fqname test' );
+    ok( $zf->fqname( $zf->soa ) eq $zf->soa->{'ORIGIN'}, 'SOA fqname test' );
+    ok( $zf->fqname( $zf->a->[0] ) eq 'dns-zoneparse-test.net.', 'A @ fqname test' );
+    ok( $zf->fqname( $zf->a->[1] ) eq 'localhost.dns-zoneparse-test.net.', 'A named fqname test' );
 
     is_deeply(
         $zf->soa,
