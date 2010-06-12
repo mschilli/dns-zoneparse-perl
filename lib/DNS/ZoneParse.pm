@@ -386,6 +386,8 @@ sub _parse {
 
     # The above, but adds the literal '.' character.
     my $valid_name_char        = qr/(?:$valid_name_start_char|[\.\\])/o;
+    my $valid_txt_char         = qr/\S+/o;
+    my $valid_quoted_txt_char  = qr/.+/o;
     # Like the above, but adds whitespace (space and tabs) too.
     my $valid_quoted_name_char = qr/(?:$valid_name_start_char|[. ;\t()\\])/o;
     my $valid_name             = qr/$valid_name_start_char(?:$valid_name_char|\.)*/o;
@@ -394,6 +396,7 @@ sub _parse {
     my $rr_type                = qr/\b(?:NS|A|CNAME)\b/i;
     my $rr_ttl                 = qr/(?:\d+[wdhms]?)+/i;
     my $ttl_cls                = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
+    my $last_good_line;
 
     foreach ( @$records ) {
         #TRACE( "parsing line <$_>" );
@@ -541,7 +544,7 @@ sub _parse {
             /($valid_name)? \s+
                 $ttl_cls
                 TXT \s+
-                ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+)
+                ("$valid_quoted_txt_char*(?<!\\)"|$valid_txt_char+)
             /ixo
         ) {
             push @{ $dns_txt{$self} },
@@ -561,8 +564,8 @@ sub _parse {
             /^($valid_name)? \s+
                  $ttl_cls
                  HINFO \s+
-                 ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+) \s+
-                 ("$valid_quoted_name_char*(?<!\\)"|$valid_name_char+)
+                 ("$valid_quoted_txt_char*(?<!\\)"|$valid_txt_char+) \s+
+                 ("$valid_quoted_txt_char*(?<!\\)"|$valid_txt_char+)
                /ixo
          )
         {
@@ -652,10 +655,12 @@ sub _parse {
             chomp $@;
             $last_parse_error_count{$self}++;
             if ( $unparseable_line_callback{$self} ) {
-                $unparseable_line_callback{$self}->( $self, $_, $@ );
+                $unparseable_line_callback{$self}->( $self, $_, $@, $last_good_line );
             } else {
                 carp "Unparseable line ($@)\n  $_\n";
             }
+        } else {
+            $last_good_line = $_;
         }
     }
     return 1;
@@ -1008,19 +1013,19 @@ DNS::ZoneParse will C<croak> when an unparsable line is encountered, but will
 continue to parse the file. Each time an unparsable line is encountered, an
 internal counter is incrememnted. See C<last_parse_error_count> for details.
 
+The callback is passed four parameters, a reference to the DNS::ZoneParse
+object which is doing the parsing, the text of the line that is unable to be
+parsed, the text of the reason the line could not be parsed, and the text of
+the last successfully parsed line.
+
 If you want to abort parsing when an unparsable line is found, call C<die>
 from within your callback and catch that die with an eval block around the
 DNS::ZoneParse constructor (or call to _parse).
 
-Takes a single optional parameter, a code reference to the function that
-will be called when an unparsable line is reached. This code reference will be
-passed two parameters, the first is a reference to the DNS::ZoneParse object
-that is parsing the file, and the second is the text of the line that could
-not be parsed. Returns a reference to the last callback.
-
-If passed an undefined value, a reference to the current callback is returned.
-
-If passed any other value, undef is returned.
+The method takes a single optional parameter, a code reference to the function
+that will be called when an unparsable line is reached. Returns a reference to
+the last callback. If passed an undefined value, a reference to the current
+callback is returned. If passed any other value, undef is returned.
 
 =back
 

@@ -159,21 +159,21 @@ DESCRIPTION
         unparsable line is encountered, an internal counter is incrememnted.
         See "last_parse_error_count" for details.
 
+        The callback is passed four parameters, a reference to the
+        DNS::ZoneParse object which is doing the parsing, the text of the
+        line that is unable to be parsed, the text of the reason the line
+        could not be parsed, and the text of the last successfully parsed
+        line.
+
         If you want to abort parsing when an unparsable line is found, call
         "die" from within your callback and catch that die with an eval
         block around the DNS::ZoneParse constructor (or call to _parse).
 
-        Takes a single optional parameter, a code reference to the function
-        that will be called when an unparsable line is reached. This code
-        reference will be passed two parameters, the first is a reference to
-        the DNS::ZoneParse object that is parsing the file, and the second
-        is the text of the line that could not be parsed. Returns a
-        reference to the last callback.
-
-        If passed an undefined value, a reference to the current callback is
-        returned.
-
-        If passed any other value, undef is returned.
+        The method takes a single optional parameter, a code reference to
+        the function that will be called when an unparsable line is reached.
+        Returns a reference to the last callback. If passed an undefined
+        value, a reference to the current callback is returned. If passed
+        any other value, undef is returned.
 
   EXAMPLES
     This script will print the A records in a zone file, add a new A record
