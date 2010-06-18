@@ -41,7 +41,7 @@ sub test_zone {
         {
             'minimumTTL' => '86400',
             'serial'     => $serial,
-            'ttl'        => '1H',
+            'ttl'        => '3600',
             'primary'    => 'ns0.dns-zoneparse-test.net.',
             'origin'     => 'dns-zoneparse-test',
             'email'      => 'support\\.contact.dns-zoneparse-test.net.',
@@ -49,7 +49,7 @@ sub test_zone {
             'refresh'    => '10801',
             'expire'     => '691200',
             'ORIGIN'     => 'net.',
-            'class'      => 'SOA',
+            'class'      => 'IN',
         },
         'SOA parsed ok',
     );
@@ -68,7 +68,7 @@ sub test_zone {
                 'ORIGIN' => 'net.',
             },
             {
-                'ttl'    => '',
+                'ttl'    => '43200',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => 'ns1.dns-zoneparse-test.net.',

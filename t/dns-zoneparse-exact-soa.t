@@ -49,7 +49,7 @@ sub test_zone {
             'refresh'    => '10801',
             'expire'     => '691200',
             'ORIGIN'     => 'dns-zoneparse-test.net.',
-            'class'      => 'SOA',
+            'class'      => 'IN',
         },
         'SOA parsed ok',
     );
@@ -65,7 +65,7 @@ sub test_zone {
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '',
+                'ttl'    => '43200',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => 'ns1.dns-zoneparse-test.net.',
@@ -79,7 +79,7 @@ sub test_zone {
 
 __DATA__
 $TTL 1H
-dns-zoneparse-test.net. 3600   IN      SOA     ns0.dns-zoneparse-test.net.   support\.contact.dns-zoneparse-test.net. (
+dns-zoneparse-test.net.        IN      SOA     ns0.dns-zoneparse-test.net.   support\.contact.dns-zoneparse-test.net. (
                         2000100502   ; serial number
                         10801       ; refresh
                         3600        ; retry

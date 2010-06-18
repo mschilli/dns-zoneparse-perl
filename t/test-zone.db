@@ -26,6 +26,9 @@ foo                     IN      A       10.0.0.6
 mini                            A       10.0.0.7
 icarus                  IN      AAAA    fe80::0260:83ff:fe7c:3a2a
                                 HINFO   server freebsd
+
+; This is invalid, but should be loadable anyway. RRs need a consistent TTL,
+; and the top soup line is inheriting the TTL from above.
 soup                    IN      TXT     "This is a text message"
          86401                  HINFO   server "freebsd"
 txta                            TXT     "This is another text message"

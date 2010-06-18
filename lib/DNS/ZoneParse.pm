@@ -22,7 +22,8 @@ $VERSION = '1.00';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
-    %dns_last_name, %dns_last_origin, %dns_found_origins,
+    %dns_last_name, %dns_last_origin, %dns_found_origins, %dns_last_ttl,
+    %dns_last_class,
     %unparseable_line_callback, %last_parse_error_count,
 );
 
@@ -80,6 +81,8 @@ sub DESTROY {
     delete $dns_id{$self};
     delete $dns_last_name{$self};
     delete $dns_last_origin{$self};
+    delete $dns_last_ttl{$self};
+    delete $dns_last_class{$self};
     delete $dns_found_origins{$self};
     delete $unparseable_line_callback{$self};
     delete $last_parse_error_count{$self};
@@ -316,6 +319,8 @@ sub _initialize {
     $dns_rp{$self}        = [];
     $dns_last_name{$self} = undef;
     $dns_last_origin{$self} = undef;
+    $dns_last_ttl{$self} = undef;
+    $dns_last_class{$self} = 'IN'; # Class defaults to IN.
     $dns_found_origins{$self} = {};
     $last_parse_error_count{$self} = 0;
     return 1;
@@ -505,10 +510,10 @@ sub _parse {
          )
         {
             # SOA record
-            my $ttl = $dns_soa{$self}->{ttl} || $2 || '';
             $dns_soa{$self} = $self->_massage( {
                     origin     => $1,
-                    ttl        => $ttl,
+                    ttl        => $2,
+                    class      => $3,
                     primary    => $4,
                     email      => $5,
                     serial     => $6,
@@ -516,7 +521,6 @@ sub _parse {
                     retry      => $8,
                     expire     => $9,
                     minimumTTL => $10,
-                    class      => 'SOA',
             } );
 
             if ( !$origin ) {
@@ -558,11 +562,14 @@ sub _parse {
                     text  => $4,
              } );
         } elsif (
-            /\$TTL \s+
+            /^\s*\$TTL \s+
                 ($rr_ttl)
             /ixo
         ) {
-            $dns_soa{$self}->{ttl} = $1;
+            if ( !defined $dns_soa{$self} ) {
+                $dns_soa{$self}->{ttl} = $1;
+            }
+            $dns_last_ttl{$self} = $1;
         } elsif (
             /^($valid_name)? \s+
                  $ttl_cls
@@ -779,9 +786,33 @@ sub _massage {
         $record->{'class'} = $record->{'ttl'};
         $record->{'ttl'} = $x;
     }
-    $record->{'class'} = uc $record->{'class'};
 
-    if ( $record->{'class'} eq 'SOA' ) {
+    if ( $record->{'class'} ) {
+        $record->{'class'} = uc $record->{'class'};
+        $dns_last_class{$self} = $record->{'class'};
+    } else {
+        # This case should never happen, because we supply a default.
+        #if ( !defined $dns_last_class{$self} ) {
+        #    die "No class defined!\n";
+        #}
+        $record->{'class'} = $dns_last_class{$self};
+    }
+
+    if ( $record->{'ttl'} ) {
+        $record->{'ttl'} = uc $record->{'ttl'};
+        $dns_last_ttl{$self} = $record->{'ttl'};
+    } else {
+        if ( !defined $dns_last_ttl{$self} ) {
+            die "No ttl defined!\n";
+        }
+        $record->{'ttl'} = $dns_last_ttl{$self};
+    }
+
+    # This is silly, but we don't know what type of record we are massaging at
+    # this point. We can detect an SOA record because it's the only type that
+    # supplies this value, which is what we need to do here to properly set
+    # the owner.
+    if ( exists $record->{'minimumTTL'} ) {
         $dns_last_name{$self} = $record->{'origin'};
 
         if ( $record->{'origin'} eq '@' ) {
