@@ -15,6 +15,9 @@ use Carp;
 # the backslash, here.
 my @ESCAPABLE_CHARACTERS = qw/ ; " \\\\ /;
 
+my $rr_class             = qr/(?:IN|HS|CH)/i;
+my $rr_ttl               = qr/(?:\d+[wdhms]?)+/i;
+
 $VERSION = '1.00';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
@@ -390,12 +393,11 @@ sub _parse {
     my $valid_quoted_txt_char  = qr/.+/o;
     # Like the above, but adds whitespace (space and tabs) too.
     my $valid_quoted_name_char = qr/(?:$valid_name_start_char|[. ;\t()\\])/o;
-    my $valid_name             = qr/$valid_name_start_char(?:$valid_name_char|\.)*/o;
+    my $valid_name             = qr/$valid_name_start_char$valid_name_char*/o;
     my $valid_ip6              = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
-    my $rr_class               = qr/\b(?:IN|HS|CH)\b/i;
     my $rr_type                = qr/\b(?:NS|A|CNAME)\b/i;
-    my $rr_ttl                 = qr/(?:\d+[wdhms]?)+/i;
-    my $ttl_cls                = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
+    #my $ttl_cls                = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
+    my $ttl_cls                = qr/(?:\b((?:$rr_ttl)|(?:$rr_class))\s)?(?:\b((?:$rr_class)|(?:$rr_ttl))\s)?/o;
     my $last_good_line;
 
     foreach ( @$records ) {
@@ -428,7 +430,7 @@ sub _parse {
                     name  => $name,
                     class => $class,
                     host  => $host,
-                    ttl   => $ttl
+                    ttl   => $ttl,
              } );
         } elsif (
             /^($valid_name)? \s+
@@ -444,7 +446,7 @@ sub _parse {
                     name  => $name,
                     class => $class,
                     host  => $host,
-                    ttl   => $ttl
+                    ttl   => $ttl,
              } );
         } elsif (
             /^($valid_name)? \s+
@@ -463,7 +465,7 @@ sub _parse {
                     priority => $pri,
                     host     => $host,
                     ttl      => $ttl,
-                    class    => $class
+                    class    => $class,
              } );
         } elsif (
             /^($valid_name)? \s+
@@ -486,7 +488,7 @@ sub _parse {
                     port     => $port,
                     host     => $host,
                     ttl      => $ttl,
-                    class    => $class
+                    class    => $class,
              } );
         } elsif (
             /^($valid_name) \s+
@@ -513,7 +515,8 @@ sub _parse {
                     refresh    => $7,
                     retry      => $8,
                     expire     => $9,
-                    minimumTTL => $10
+                    minimumTTL => $10,
+                    class      => 'SOA',
             } );
 
             if ( !$origin ) {
@@ -538,7 +541,7 @@ sub _parse {
                     name  => $1,
                     class => $3,
                     ttl   => $2,
-                    host  => $4
+                    host  => $4,
              } );
         } elsif (
             /($valid_name)? \s+
@@ -552,7 +555,7 @@ sub _parse {
                     name  => $1,
                     ttl   => $2,
                     class => $3,
-                    text  => $4
+                    text  => $4,
              } );
         } elsif (
             /\$TTL \s+
@@ -575,7 +578,7 @@ sub _parse {
                     ttl   => $2,
                     class => $3,
                     cpu   => $4,
-                    os    => $5
+                    os    => $5,
              } );
         } elsif (
             /^($valid_name)? \s+
@@ -592,7 +595,7 @@ sub _parse {
                     ttl   => $2,
                     class => $3,
                     mbox  => $4,
-                    text  => $5
+                    text  => $5,
              } );
         } elsif (
             /^($valid_name)? \s+
@@ -632,7 +635,7 @@ sub _parse {
                     vp    => $15,
              } );
 
-        } elsif ( /^\$ORIGIN\s+($valid_name_char+)/io ) {
+        } elsif ( /^\s*\$ORIGIN\s+($valid_name_char+)/io ) {
             my $new_origin = $1;
             # We could track each origins origin, all the way down, but what
             # would that get us? Madness, surely.
@@ -678,9 +681,9 @@ sub _clean_records {
     my @lines;
 
     $zone =~ s/\r\n/\n/sg;
-    $zone =~ s/^\s*;.*$//mg;    # Remove lines with nothing but comments.
     $zone =~ s{[ \t]+}{ }g;     # Collapse whitespace, turn TABs to spaces.
 
+    # Trim comments, handle parentheses and some escape sequences.
     while (1) {
         my $c = substr( $zone, $x, 1 );
 
@@ -730,9 +733,6 @@ sub _clean_records {
 sub _massage {
     my ( $self, $record ) = @_;
 
-    if ( $record->{'class'} ) {
-        $record->{'class'} = uc $record->{'class'};
-    }
     foreach my $r ( keys %$record ) {
         if ( !defined $record->{$r} ) {
             $record->{$r} = '';
@@ -766,11 +766,22 @@ sub _massage {
         }
     }
 
-    # This is silly, but we don't know what type of record we are massaging at
-    # this point. We can detect an SOA record because it's the only type that
-    # supplies this value, which is what we need to do here to properly set
-    # the owner.
-    if ( exists $record->{'minimumTTL'} ) {
+    if (
+        ( ( $record->{'class'} =~ $rr_class ) && ( $record->{'ttl'} =~ $rr_class ) )
+        ||
+        ( ( $record->{'class'} =~ $rr_ttl   ) && ( $record->{'ttl'} =~ $rr_ttl   ) )
+    ) {
+        die "Invalid ttl/class values!\n";
+    };
+
+    if ( ( $record->{'class'} =~ $rr_ttl ) || ( $record->{'ttl'} =~ $rr_class ) ) {
+        my $x = $record->{'class'};
+        $record->{'class'} = $record->{'ttl'};
+        $record->{'ttl'} = $x;
+    }
+    $record->{'class'} = uc $record->{'class'};
+
+    if ( $record->{'class'} eq 'SOA' ) {
         $dns_last_name{$self} = $record->{'origin'};
 
         if ( $record->{'origin'} eq '@' ) {
@@ -880,12 +891,11 @@ nmake is available at http://download.microsoft.com/download/vc15/Patch/1.52/W95
 =head1 DESCRIPTION
 
 This module will parse a Zone File and put all the Resource Records (RRs)
-into an anonymous hash structure. At the moment, the following types of 
-RRs are supported: SOA, NS, MX, A, CNAME, TXT, PTR, HINFO, and RP. It could
-be useful for maintaining DNS zones, or for transferring DNS zones to other
-servers. If you want to generate an XML-friendly version of your zone files,
-it is easy to use XML::Simple with this module once you have parsed the
-zone file.
+into an anonymous hash structure. Various record types are supported, see the
+L<methods> section for details. It could be useful for maintaining DNS zones,
+or for transferring DNS zones to other servers. If you want to generate an
+XML-friendly version of your zone files, it is easy to use XML::Simple with
+this module once you have parsed the zone file.
 
 DNS::ZoneParse scans the DNS zone file - removes comments and seperates
 the file into its constituent records. It then parses each record and
@@ -958,7 +968,7 @@ is specified as fully qualified.
 
 Returns a hash reference with the following properties:
 'serial', 'origin', 'primary', 'refresh', 'retry', 'ttl', 'minimumTTL',
-'email', 'expire'.
+'email', 'expire', 'class'.
 
 =item dump
 
@@ -971,7 +981,7 @@ such as XML.
 Takes a single parameter, a hash reference containing a record.
 
 Returns the fully qualified name of this record, with a trailing '.'. In most
-cases this is as simple as concatinating the 'name' and 'ORIGIN' with a '.',
+cases this is as simple as concatenating the 'name' and 'ORIGIN' with a '.',
 but with special handling for SOA records and records with an '@' name.
 
 =item new_serial

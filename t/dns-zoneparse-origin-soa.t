@@ -49,6 +49,7 @@ sub test_zone {
             'refresh'    => '10801',
             'expire'     => '691200',
             'ORIGIN'     => 'net.',
+            'class'      => 'SOA',
         },
         'SOA parsed ok',
     );
