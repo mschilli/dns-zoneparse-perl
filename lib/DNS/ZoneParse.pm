@@ -1035,7 +1035,29 @@ is specified as fully qualified.
 
 Returns a hash reference with the following properties:
 'serial', 'origin', 'primary', 'refresh', 'retry', 'ttl', 'minimumTTL',
-'email', 'expire', 'class'.
+'email', 'expire', 'class', 'ORIGIN'.
+
+The 'ORIGIN' property is returned separate from 'origin' property, though the
+data may be the same. 'ORIGIN' represents the implicit origin for the record
+while 'origin' represents the origin specified on the SOA line in the file.
+
+If the 'origin' value is relative (that is, does not end with a '.'), the
+actual zone for which the SOA line applies must be computed by concatenating
+the 'origin' and 'ORIGIN' values. See L<fqname> for details. If the 'origin'
+value is absolute, no computation is necessary and 'origin' is the same as
+'ORIGIN'.
+
+=item generate()
+
+Returns an array of hashes representing $GENERATE directives present in the
+zone. Note, $GENERATE directives are BIND-specific additions. They are not
+expanded by DNS::ZoneParse, but users are able to access and modify these
+directives. The following properties are returned:
+
+'range', 'lhs', 'ttl', 'class', 'type', 'rhs', 'ORIGIN'.
+
+See the BIND documentation for details on the syntax and usage of the $GENERATE
+directive.
 
 =item dump
 
@@ -1048,8 +1070,12 @@ such as XML.
 Takes a single parameter, a hash reference containing a record.
 
 Returns the fully qualified name of this record, with a trailing '.'. In most
-cases this is as simple as concatenating the 'name' and 'ORIGIN' with a '.',
-but with special handling for SOA records and records with an '@' name.
+cases this is as simple as concatenating the 'name' and 'ORIGIN' with a '.'
+unless 'name' is '@', in which case the fqname is simply the 'ORIGIN'. For
+SOA records, the same process is performed on the 'origin' instead of 'name'.
+
+Please note, fqname will not expand the right hand side of a record (ie,
+CNAME, SOA, MX, etc). The user must expand these values via the above method.
 
 =item new_serial
 
