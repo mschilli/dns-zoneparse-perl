@@ -750,4 +750,20 @@ sub test_zone {
         'HINFO records parsed OK',
     );
 
+    is_deeply(
+        $zf->generate,
+        [
+            {
+                'rhs' => '10.0.0.$',
+                'ttl' => '43200',
+                'lhs' => 'www$',
+                'range' => '1-10/1',
+                'type' => 'A',
+                'class' => 'IN',
+                'ORIGIN' => 'dns-zoneparse-test.net.',
+            },
+        ],
+        '$GENERATE directives parsed OK',
+    );
+
 }

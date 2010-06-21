@@ -22,9 +22,9 @@ $VERSION = '1.00';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
-    %dns_last_name, %dns_last_origin, %dns_found_origins, %dns_last_ttl,
-    %dns_last_class,
-    %unparseable_line_callback, %last_parse_error_count,
+    %dns_generate,
+    %dns_last_name, %dns_last_origin, %dns_last_class, %dns_last_ttl,
+    %dns_found_origins, %unparseable_line_callback, %last_parse_error_count,
 );
 
 my %possibly_quoted = map { $_ => undef } qw/ os cpu text mbox /;
@@ -79,6 +79,7 @@ sub DESTROY {
     delete $dns_rp{$self};
     delete $dns_loc{$self};
     delete $dns_id{$self};
+    delete $dns_generate{$self};
     delete $dns_last_name{$self};
     delete $dns_last_origin{$self};
     delete $dns_last_ttl{$self};
@@ -105,6 +106,7 @@ sub AUTOLOAD {
      : $method eq 'hinfo'    ? $dns_hinfo{$self}
      : $method eq 'rp'       ? $dns_rp{$self}
      : $method eq 'loc'      ? $dns_loc{$self}
+     : $method eq 'generate' ? $dns_generate{$self}
      : $method eq 'zonefile' ? $dns_id{$self}->{ZoneFile}
      : $method eq 'origin'   ? $dns_id{$self}->{Origin}
      :                         undef;
@@ -268,6 +270,12 @@ ZONEHEADER2
         $output .= "$o->{d2}	$o->{m2}	$o->{s2}	$o->{EorW}	";
         $output .= "$o->{alt}	$o->{siz}	$o->{hp}	$o->{vp}\n";
     }
+    foreach my $o ( @{ $dns_generate{$self} } ) {
+        next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
+        $self->_escape_chars( $o );
+        $output .= "\$GENERATE $o->{range}  $o->{lhs}  $o->{ttl}  $o->{class}  $o->{type}  $o->{rhs}\n";
+    }
 
     }
 
@@ -317,6 +325,8 @@ sub _initialize {
     $dns_srv{$self}       = [];
     $dns_hinfo{$self}     = [];
     $dns_rp{$self}        = [];
+    $dns_loc{$self}       = [];
+    $dns_generate{$self}  = [];
     $dns_last_name{$self} = undef;
     $dns_last_origin{$self} = undef;
     $dns_last_ttl{$self} = undef;
@@ -403,6 +413,7 @@ sub _parse {
     my $rr_type                = qr/\b(?:NS|A|CNAME)\b/i;
     #my $ttl_cls                = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
     my $ttl_cls                = qr/(?:\b((?:$rr_ttl)|(?:$rr_class))\s)?(?:\b((?:$rr_class)|(?:$rr_ttl))\s)?/o;
+    my $generate_range         = qr{\d+\-\d+(?:/\d+)?};
     my $last_good_line;
 
     foreach ( @$records ) {
@@ -656,6 +667,26 @@ sub _parse {
             $dns_last_origin{$self} = $new_origin;
             $dns_found_origins{$self}->{ $new_origin } = 1;
 
+        } elsif ( /^ \s* \$GENERATE \s+
+                   ($generate_range) \s+     # range
+                   ($valid_name) \s+         # lhs
+                   (?:($rr_ttl) \s+)?        # ttl
+                   (?:($rr_class) \s+)?      # class
+                   ([a-z]+) \s+              # type
+                   ($valid_name)             # rhs
+                 /ixo
+         )
+        {
+            push @{ $dns_generate{$self} },
+             $self->_massage( {
+                    range  => $1,
+                    lhs    => $2,
+                    ttl    => $3,
+                    class  => $4,
+                    type   => $5,
+                    rhs    => $6,
+            } );
+
         } else {
             die "Unknown record type\n";
         }
@@ -846,14 +877,19 @@ sub _massage {
 
     # Not an SOA record.
     } else {
-        if ( $record->{'name'} ) {
-            $dns_last_name{$self} = $record->{'name'};
-        } else {
-            #TRACE( "Record has no name, using last name" );
-            if ( !$dns_last_name{$self} ) {
-                die "No current owner name\n";
+
+        # The silliness continues: only $GENERATE directives have a lhs, and
+        # don't need a 'name'.
+        if ( !exists $record->{'lhs'} ) {
+            if ( $record->{'name'} ) {
+                $dns_last_name{$self} = $record->{'name'};
+            } else {
+                #TRACE( "Record has no name, using last name" );
+                if ( !$dns_last_name{$self} ) {
+                    die "No current owner name\n";
+                }
+                $record->{'name'} = $dns_last_name{$self};
             }
-            $record->{'name'} = $dns_last_name{$self};
         }
 
         if ( !$dns_last_origin{$self} ) {
