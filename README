@@ -36,12 +36,12 @@ INSTALLATION
 
 DESCRIPTION
     This module will parse a Zone File and put all the Resource Records
-    (RRs) into an anonymous hash structure. At the moment, the following
-    types of RRs are supported: SOA, NS, MX, A, CNAME, TXT, PTR, HINFO, and
-    RP. It could be useful for maintaining DNS zones, or for transferring
-    DNS zones to other servers. If you want to generate an XML-friendly
-    version of your zone files, it is easy to use XML::Simple with this
-    module once you have parsed the zone file.
+    (RRs) into an anonymous hash structure. Various record types are
+    supported, see the methods section for details. It could be useful for
+    maintaining DNS zones, or for transferring DNS zones to other servers.
+    If you want to generate an XML-friendly version of your zone files, it
+    is easy to use XML::Simple with this module once you have parsed the
+    zone file.
 
     DNS::ZoneParse scans the DNS zone file - removes comments and seperates
     the file into its constituent records. It then parses each record and
@@ -107,7 +107,30 @@ DESCRIPTION
     soa()
         Returns a hash reference with the following properties: 'serial',
         'origin', 'primary', 'refresh', 'retry', 'ttl', 'minimumTTL',
-        'email', 'expire'.
+        'email', 'expire', 'class', 'ORIGIN'.
+
+        The 'ORIGIN' property is returned separate from 'origin' property,
+        though the data may be the same. 'ORIGIN' represents the implicit
+        origin for the record while 'origin' represents the origin specified
+        on the SOA line in the file.
+
+        If the 'origin' value is relative (that is, does not end with a
+        '.'), the actual zone for which the SOA line applies must be
+        computed by concatenating the 'origin' and 'ORIGIN' values. See
+        fqname for details. If the 'origin' value is absolute, no
+        computation is necessary and 'origin' is the same as 'ORIGIN'.
+
+    generate()
+        Returns an array of hashes representing $GENERATE directives present
+        in the zone. Note, $GENERATE directives are BIND-specific additions.
+        They are not expanded by DNS::ZoneParse, but users are able to
+        access and modify these directives. The following properties are
+        returned:
+
+        'range', 'lhs', 'ttl', 'class', 'type', 'rhs', 'ORIGIN'.
+
+        See the BIND documentation for details on the syntax and usage of
+        the $GENERATE directive.
 
     dump
         Returns a copy of the datastructute that stores all the resource
@@ -118,9 +141,14 @@ DESCRIPTION
         Takes a single parameter, a hash reference containing a record.
 
         Returns the fully qualified name of this record, with a trailing
-        '.'. In most cases this is as simple as concatinating the 'name' and
-        'ORIGIN' with a '.', but with special handling for SOA records and
-        records with an '@' name.
+        '.'. In most cases this is as simple as concatenating the 'name' and
+        'ORIGIN' with a '.' unless 'name' is '@', in which case the fqname
+        is simply the 'ORIGIN'. For SOA records, the same process is
+        performed on the 'origin' instead of 'name'.
+
+        Please note, fqname will not expand the right hand side of a record
+        (ie, CNAME, SOA, MX, etc). The user must expand these values via the
+        above method.
 
     new_serial
         "new_serial()" incriments the Zone serial number. It will generate a
