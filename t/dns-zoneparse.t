@@ -1,6 +1,6 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 58;
+use Test::More tests => 61;
 use File::Spec::Functions ':ALL';
 use lib '../lib/';
 
