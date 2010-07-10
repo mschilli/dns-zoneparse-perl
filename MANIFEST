@@ -6,5 +6,8 @@ MANIFEST
 MANIFEST.SKIP
 META.yml			Module meta-data (added by MakeMaker)
 README
+t/dns-zoneparse-exact-soa.t
+t/dns-zoneparse-implied-soa.t
+t/dns-zoneparse-origin-soa.t
 t/dns-zoneparse.t
 t/test-zone.db
