@@ -40,12 +40,12 @@ INSTALLATION
 
 DESCRIPTION
     This module will parse a Zone File and put all the Resource Records
-    (RRs) into an anonymous hash structure. At the moment, the following
-    types of RRs are supported: SOA, NS, MX, A, CNAME, TXT, PTR, HINFO, and
-    RP. It could be useful for maintaining DNS zones, or for transferring
-    DNS zones to other servers. If you want to generate an XML-friendly
-    version of your zone files, it is easy to use XML::Simple with this
-    module once you have parsed the zone file.
+    (RRs) into an anonymous hash structure. Various record types are
+    supported, see the methods section for details. It could be useful for
+    maintaining DNS zones, or for transferring DNS zones to other servers.
+    If you want to generate an XML-friendly version of your zone files, it
+    is easy to use XML::Simple with this module once you have parsed the
+    zone file.
 
     DNS::ZoneParse scans the DNS zone file - removes comments and seperates
     the file into its constituent records. It then parses each record and
@@ -82,15 +82,15 @@ DESCRIPTION
 
         Returns the mx records in an array reference.
 
-        All records have the following properties: 'ttl', 'class', 'host',
-        'name'.
+        All records (except SOA) have the following properties: 'ttl',
+        'class', 'host', 'name', 'ORIGIN'.
 
         MX records also have a 'priority' property.
 
         SRV records also have 'priority', 'weight' and 'port' properties.
 
         TXT records also have a 'text' property representing the record's
-        "txt-data" descriptive text.
+        'txt-data' descriptive text.
 
         HINFO records also have 'cpu' and 'os' properties.
 
@@ -103,15 +103,56 @@ DESCRIPTION
         croak with an error message about an invalid method. (This is not an
         ideal behavior, but has been kept for backwards compatibility.)
 
+        The 'ORIGIN' property is the fully-qualified origin of the record.
+        See fqname for details on constructing a fully qualified domain
+        name. Note: for SOA records, the 'ORIGIN' will match the 'origin'
+        property when the SOA record is specified as fully qualified.
+
     soa()
         Returns a hash reference with the following properties: 'serial',
         'origin', 'primary', 'refresh', 'retry', 'ttl', 'minimumTTL',
-        'email', 'expire'
+        'email', 'expire', 'class', 'ORIGIN'.
+
+        The 'ORIGIN' property is returned separate from 'origin' property,
+        though the data may be the same. 'ORIGIN' represents the implicit
+        origin for the record while 'origin' represents the origin specified
+        on the SOA line in the file.
+
+        If the 'origin' value is relative (that is, does not end with a
+        '.'), the actual zone for which the SOA line applies must be
+        computed by concatenating the 'origin' and 'ORIGIN' values. See
+        fqname for details. If the 'origin' value is absolute, no
+        computation is necessary and 'origin' is the same as 'ORIGIN'.
+
+    generate()
+        Returns an array of hashes representing $GENERATE directives present
+        in the zone. Note, $GENERATE directives are BIND-specific additions.
+        They are not expanded by DNS::ZoneParse, but users are able to
+        access and modify these directives. The following properties are
+        returned:
+
+        'range', 'lhs', 'ttl', 'class', 'type', 'rhs', 'ORIGIN'.
+
+        See the BIND documentation for details on the syntax and usage of
+        the $GENERATE directive.
 
     dump
         Returns a copy of the datastructute that stores all the resource
         records. This might be useful if you want to quickly transform the
         data into another format, such as XML.
+
+    fqname
+        Takes a single parameter, a hash reference containing a record.
+
+        Returns the fully qualified name of this record, with a trailing
+        '.'. In most cases this is as simple as concatenating the 'name' and
+        'ORIGIN' with a '.' unless 'name' is '@', in which case the fqname
+        is simply the 'ORIGIN'. For SOA records, the same process is
+        performed on the 'origin' instead of 'name'.
+
+        Please note, fqname will not expand the right hand side of a record
+        (ie, CNAME, SOA, MX, etc). The user must expand these values via the
+        above method.
 
     new_serial
         "new_serial()" incriments the Zone serial number. It will generate a
@@ -150,21 +191,21 @@ DESCRIPTION
         unparsable line is encountered, an internal counter is incrememnted.
         See "last_parse_error_count" for details.
 
+        The callback is passed four parameters, a reference to the
+        DNS::ZoneParse object which is doing the parsing, the text of the
+        line that is unable to be parsed, the text of the reason the line
+        could not be parsed, and the text of the last successfully parsed
+        line.
+
         If you want to abort parsing when an unparsable line is found, call
         "die" from within your callback and catch that die with an eval
         block around the DNS::ZoneParse constructor (or call to _parse).
 
-        Takes a single optional parameter, a code reference to the function
-        that will be called when an unparsable line is reached. This code
-        reference will be passed two parameters, the first is a reference to
-        the DNS::ZoneParse object that is parsing the file, and the second
-        is the text of the line that could not be parsed. Returns a
-        reference to the last callback.
-
-        If passed an undefined value, a reference to the current callback is
-        returned.
-
-        If passed any other value, undef is returned.
+        The method takes a single optional parameter, a code reference to
+        the function that will be called when an unparsable line is reached.
+        Returns a reference to the last callback. If passed an undefined
+        value, a reference to the current callback is returned. If passed
+        any other value, undef is returned.
 
   EXAMPLES
     This script will print the A records in a zone file, add a new A record

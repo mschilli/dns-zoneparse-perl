@@ -1,5 +1,17 @@
 Revision history for Perl extension DNS::ZoneParse.
 
+1.00 - Fri Jul 02 2010
+      - (je) Improve parsing performance significantly.
+      - (je) Improve parsing of quoted data and data with escape sequences.
+      - (je) Add error message to unparsable line callback.
+      - (je) Catch more errors with invalid data sections (invalid escapes,
+             bad quoting).
+      - (je) Add support for $GENERATE directives.
+      - (je) Add support for $ORIGIN directives.
+      - (je) Add method to help construct FQDNs from record names.
+      - (je) Support reversed CLASS/TTL entries in zonefiles.
+      - (je) Increase the number of unit tests (still incomplete).
+
 0.99 - Tue Oct 20 2009
       - (je) Support for callback to catch unparsable lines.
       - (je) Keep a counter of unparsable lines after parsing.
