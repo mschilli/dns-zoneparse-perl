@@ -12,18 +12,16 @@ close DATA;
 sub on_parse_fail {
     my ( $dns, $line, $reason ) = @_;
     if ( $line !~ /this should fail/ ) {
-        warn "Parse failure ($reason) on line: $line\n";
+        ok( 0, "Parse failure ($reason) on line: $line\n" );
     }
 }
 
-warn "starting stringified test";
 my $str_zonefile = DNS::ZoneParse->new( \$zone_data, undef, \&on_parse_fail );
 ok( $str_zonefile,                                'new obj from string' );
 ok( $str_zonefile->last_parse_error_count() == 0, "caught all errors (none!)" );
 test_zone( $str_zonefile );
 
 my $serialized = $str_zonefile->output();
-warn "starting from output test";
 $str_zonefile = DNS::ZoneParse->new( \$serialized, undef, \&on_parse_fail );
 ok( $str_zonefile,                                'new obj from output' );
 ok( $str_zonefile->last_parse_error_count() == 0, "caught all errors (none!)" );
