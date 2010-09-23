@@ -1,6 +1,5 @@
 # DNS::ZoneParse
 # Parse and Manipulate DNS Zonefiles
-# CVS: $Id: ZoneParse.pm,v 1.8 2009/10/08 00:29:50 johneagl Exp $
 package DNS::ZoneParse;
 
 use 5.006;
@@ -18,7 +17,7 @@ my @ESCAPABLE_CHARACTERS = qw/ ; " \\\\ /;
 my $rr_class             = qr/(?:IN|HS|CH)/i;
 my $rr_ttl               = qr/(?:\d+[wdhms]?)+/i;
 
-$VERSION = '1.00';
+$VERSION = '1.10';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
@@ -305,6 +304,48 @@ sub fqname {
             return $record_ref->{'name'} . '.' . $record_ref->{'ORIGIN'};
         }
     }
+}
+
+sub ttl_to_int {
+    my ( $self, $t ) = @_;
+
+    # Passed in nothing? Huh?
+    if ( !$t ) {
+        return 0;
+    }
+
+    # If it's all digits already, just pass it right back.
+    if ( $t =~ /^\d+$/ ) {
+        return $t;
+    }
+
+    # If it doesn't look like a valid TTL string, error. We know, because of
+    # the above test, that it's not just a number, if we got this far.
+    if ( $t !~ /^(?:\d+[WDHMS])+$/i ) {
+        die "Unknown TTL string format!\n";
+    }
+    $t = uc( $t );
+
+    my $r;
+    my %ttl;
+    while ( $t =~ /(\d+)([WDHMS])/g ) {
+        # Did we already see this modifier?
+        if ( defined $ttl{ $2 } ) { die "Invalid TTL!\n"; }
+        $ttl{ $2 } = $1;
+    }
+
+    foreach my $m ( qw/ W D H M S / ) {
+        if ( !exists $ttl{ $m } ) { $ttl{ $m } = 0; }
+    }
+ 
+    $r = $ttl{'W'} * 7;
+    $r = ( $r + $ttl{'D'} ) * 24;
+    $r = ( $r + $ttl{'H'} ) * 60;
+    $r = ( $r + $ttl{'M'} ) * 60;
+    $r = ( $r + $ttl{'S'} );
+
+    die unless $r == $ttl{'S'} + 60 * ( $ttl{'M'} + 60 * ( $ttl{'H'} + 24 * ( $ttl{'D'} + 7 * $ttl{'W'} ) ) );
+    return $r;
 }
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # #
@@ -829,22 +870,24 @@ sub _massage {
         $record->{'class'} = $dns_last_class{$self};
     }
 
-    if ( $record->{'ttl'} ) {
-        $record->{'ttl'} = uc $record->{'ttl'};
-        $dns_last_ttl{$self} = $record->{'ttl'};
-    } else {
-        if ( !defined $dns_last_ttl{$self} ) {
-            die "No ttl defined!\n";
-        }
-        $record->{'ttl'} = $dns_last_ttl{$self};
-    }
-
     # This is silly, but we don't know what type of record we are massaging at
     # this point. We can detect an SOA record because it's the only type that
     # supplies this value, which is what we need to do here to properly set
     # the owner.
     if ( exists $record->{'minimumTTL'} ) {
         $dns_last_name{$self} = $record->{'origin'};
+
+        # In the case of an SOA record, we fall back to the minimumTTL value
+        # when a TTL isn't otherwise specified. This is what BIND does.
+        if ( $record->{'ttl'} ) {
+            $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'ttl'} );
+        } else {
+            if ( $dns_last_ttl{$self} ) {
+                $record->{'ttl'} = $dns_last_ttl{$self};
+            } else {
+                $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'minimumTTL'} );
+            }
+        }
 
         if ( $record->{'origin'} eq '@' ) {
             # We encountered a @ SOA line without an origin directive above
@@ -897,7 +940,18 @@ sub _massage {
         } else {
             $record->{'ORIGIN'} = $dns_last_origin{$self};
         }
+
+        # Nothing special about TTL parsing for non-SOA records.
+        if ( $record->{'ttl'} ) {
+            $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'ttl'} );
+        } else {
+            if ( !defined $dns_last_ttl{$self} ) {
+                die "No ttl defined!\n";
+            }
+            $record->{'ttl'} = $dns_last_ttl{$self};
+        }
     }
+
     #DUMP( "Record parsed", $record );
     return $record;
 }
@@ -1076,6 +1130,15 @@ SOA records, the same process is performed on the 'origin' instead of 'name'.
 
 Please note, fqname will not expand the right hand side of a record (ie,
 CNAME, SOA, MX, etc). The user must expand these values via the above method.
+
+=item ttl_to_int
+
+Takes a single parameter, a string representing a valid record TTL.
+
+Returns an integer representing the number of seconds the TTL represents.
+Note, this does not take into account any leap-years, leap-seconds, DST
+changes, etc. It is simply the count of the number of seconds in the specified
+period of time.
 
 =item new_serial
 

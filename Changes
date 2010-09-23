@@ -1,5 +1,10 @@
 Revision history for Perl extension DNS::ZoneParse.
 
+1.10 - Wed Sep 22 2010
+      - (je) Add ttl_to_int method.
+      - (je) Use the SOA "minimum" field if no other TTL can be found (and be
+             compatible with BIND in doing so).
+
 1.00 - Fri Jul 02 2010
       - (je) Improve parsing performance significantly.
       - (je) Improve parsing of quoted data and data with escape sequences.
