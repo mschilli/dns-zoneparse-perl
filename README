@@ -150,6 +150,14 @@ DESCRIPTION
         (ie, CNAME, SOA, MX, etc). The user must expand these values via the
         above method.
 
+    ttl_to_int
+        Takes a single parameter, a string representing a valid record TTL.
+
+        Returns an integer representing the number of seconds the TTL
+        represents. Note, this does not take into account any leap-years,
+        leap-seconds, DST changes, etc. It is simply the count of the number
+        of seconds in the specified period of time.
+
     new_serial
         "new_serial()" incriments the Zone serial number. It will generate a
         date-based serial number. Or you can pass a positive number to add
