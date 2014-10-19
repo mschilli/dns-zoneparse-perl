@@ -457,6 +457,61 @@ sub _parse {
     my $generate_range         = qr{\d+\-\d+(?:/\d+)?};
     my $last_good_line;
 
+    # Process $INCLUDEs into zone records by reading RRs from file, cleaning
+    # them and letting them be parsed like all other records.
+    if (grep { $_ =~ /\$INCLUDE/ } @$records) {
+        my $inc_data;
+        my @comb;
+                
+        local $/;
+
+        my @inc_directives = grep { $_ =~ /\$INCLUDE/ } @$records;
+        
+        foreach my $inc_direct ( @inc_directives ) {
+                # We have to split $INCLUDE direcives by space unless inside a quoted
+                # string as described in RFC 1035 'character string' so we split
+                # quoted strings and then split unquoted strings by recognition of the
+                # quotes remaining from the first split.
+                #
+                # Empty strings are removed to keep consistent results when
+                # rougue quotes are left in $INCLUDE params.
+                $inc_direct =~ s/\$INCLUDE //;
+
+                my ($inc_f, $inc_domain, $inc_comment) = 
+                    grep { $_ ne '' } map { 
+                        if ($_ !~ /\"/) { split /\s/, $_ } else { $_ =~ s/\"//g; $_; }
+                    } split /\" | \"/, $inc_direct;
+
+                if ( -e $inc_f ) {
+                    open RINCLUDE, "<$inc_f"
+                        or croak qq[DNS::ZoneParse Could not open file specified in \$INCLUDE: "$inc_f"];
+                } else {
+                    croak qq[DNS::ZoneParse \$INCLUDE references missing file: "$inc_f"];
+                }
+
+                $inc_data = <RINCLUDE>;
+                close RINCLUDE;
+    
+                # Set $ORIGINs around included zones if an
+                # include domain is specified setting the adding back
+                # the last origin specified as to not modify the relative
+                # origin of the including zone.
+                if (defined $inc_domain) {
+                        my $last_origin = (grep { $_ =~ /\$ORIGIN/ } @$records)[-1];
+
+                        $inc_data = sprintf( "\$ORIGIN %s\n%s\n%s",
+                                                 $inc_domain, $inc_data, $last_origin );
+                }
+    
+                @$records = (
+                        @$records,
+                        @{ $self->_clean_records( $inc_data ) }
+                );
+        }
+    
+        @$records = grep { $_ !~ /\$INCLUDE/ } @$records;
+    }
+
     foreach ( @$records ) {
         #TRACE( "parsing line <$_>" );
 
