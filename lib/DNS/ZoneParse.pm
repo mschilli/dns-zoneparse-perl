@@ -23,7 +23,7 @@ my (
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
     %dns_generate,
     %dns_last_name, %dns_last_origin, %dns_last_class, %dns_last_ttl,
-    %dns_found_origins, %unparseable_line_callback, %last_parse_error_count,
+    %dns_dollar_ttl, %dns_found_origins, %unparseable_line_callback, %last_parse_error_count,
 );
 
 my %possibly_quoted = map { $_ => undef } qw/ os cpu text mbox /;
@@ -82,6 +82,7 @@ sub DESTROY {
     delete $dns_last_name{$self};
     delete $dns_last_origin{$self};
     delete $dns_last_ttl{$self};
+    delete $dns_dollar_ttl{$self};
     delete $dns_last_class{$self};
     delete $dns_found_origins{$self};
     delete $unparseable_line_callback{$self};
@@ -371,6 +372,7 @@ sub _initialize {
     $dns_last_name{$self} = undef;
     $dns_last_origin{$self} = undef;
     $dns_last_ttl{$self} = undef;
+    $dns_dollar_ttl{$self} = undef;
     $dns_last_class{$self} = 'IN'; # Class defaults to IN.
     $dns_found_origins{$self} = {};
     $last_parse_error_count{$self} = 0;
@@ -677,6 +679,7 @@ sub _parse {
                 $dns_soa{$self}->{ttl} = $1;
             }
             $dns_last_ttl{$self} = $1;
+            $dns_dollar_ttl{$self} = $1;
         } elsif (
             /^($valid_name)? \s+
                  $ttl_cls
@@ -937,7 +940,10 @@ sub _massage {
         if ( $record->{'ttl'} ) {
             $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'ttl'} );
         } else {
-            if ( $dns_last_ttl{$self} ) {
+            # Set TTL to $TTL, last TTL or SOA TTL respectively as per RFC 2308
+            if ( $dns_dollar_ttl{$self} ) {
+                $record->{'ttl'} = $dns_dollar_ttl{$self};
+            } elsif ( $dns_last_ttl{$self} ) {
                 $record->{'ttl'} = $dns_last_ttl{$self};
             } else {
                 $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'minimumTTL'} );
@@ -1000,10 +1006,14 @@ sub _massage {
         if ( $record->{'ttl'} ) {
             $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'ttl'} );
         } else {
-            if ( !defined $dns_last_ttl{$self} ) {
+            # Set TTL to $TTL, last TTL or SOA TTL respectively as per RFC 2308
+            if ( $dns_dollar_ttl{$self} ) {
+                $record->{'ttl'} = $dns_dollar_ttl{$self};
+            } elsif ( $dns_last_ttl{$self} ) {
+                $record->{'ttl'} = $dns_last_ttl{$self};
+            } else {
                 die "No ttl defined!\n";
             }
-            $record->{'ttl'} = $dns_last_ttl{$self};
         }
     }
 
