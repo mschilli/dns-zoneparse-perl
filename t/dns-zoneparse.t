@@ -76,35 +76,35 @@ sub test_zone {
         $zf->a,
         [
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => '127.0.0.1',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'localhost',
                 'class'  => 'IN',
                 'host'   => '127.0.0.1',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'mail',
                 'class'  => 'IN',
                 'host'   => '127.0.0.1',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'www',
                 'class'  => 'IN',
                 'host'   => '127.0.0.1',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'www',
                 'class'  => 'IN',
                 'host'   => '10.0.0.2',
@@ -118,21 +118,21 @@ sub test_zone {
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'www',
                 'class'  => 'IN',
                 'host'   => '10.0.0.5',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'foo',
                 'class'  => 'IN',
                 'host'   => '10.0.0.6',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'mini',
                 'class'  => 'IN',
                 'host'   => '10.0.0.7',
@@ -153,7 +153,7 @@ sub test_zone {
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => 'ns1.dns-zoneparse-test.net.',
@@ -168,7 +168,7 @@ sub test_zone {
         [
             {
                 'priority' => '10',
-                'ttl'      => '43200',
+                'ttl'      => '1H',
                 'name'     => '@',
                 'class'    => 'IN',
                 'host'     => 'mail',
@@ -176,7 +176,7 @@ sub test_zone {
             },
             {
                 'priority' => '10',
-                'ttl'      => '43200',
+                'ttl'      => '1H',
                 'name'     => 'www',
                 'class'    => 'IN',
                 'host'     => '10.0.0.4',
@@ -190,14 +190,14 @@ sub test_zone {
         $zf->cname,
         [
             {
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'ftp',
                 'class'  => 'IN',
                 'host'   => 'www',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'name'   => '-=+!@#$%^&*`~://+-,[]{}|\\?~`\'";',
                 'class'  => 'IN',
                 'host'   => 'ns0.dns-zoneparse-test.net.',
@@ -212,49 +212,49 @@ sub test_zone {
         [
             {
                 'text'   => 'web server',
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'www',
                 'class'  => 'IN',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
                 'text'   => 'This is a text message',
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'soup',
                 'class'  => 'IN',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
                 'text'   => 'This is another text message',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'name'   => 'txta',
                 'class'  => 'IN',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
                 'text'   => 'I\'ve"got\\back\\"slashes;!',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'name'   => 'txttest1',
                 'class'  => 'IN',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
                 'text'   => 'embedded"quote',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'name'   => 'txttest2',
                 'class'  => 'IN',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
                 'text'   => 'noquotes',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'name'   => 'txttest3',
                 'class'  => 'IN',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
                 'text'   => 'MORE (complicated) stuff -h343-',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'name'   => 'txttest4',
                 'class'  => 'IN',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -268,7 +268,7 @@ sub test_zone {
         [
             {
                 'host'   => 'fe80::0260:83ff:fe7c:3a2a',
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'name'   => 'icarus',
                 'class'  => 'IN',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -283,7 +283,7 @@ sub test_zone {
             {
                 'name'   => 'txta',
                 'class'  => 'IN',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'mbox'   => 'mbox',
                 'text'   => 'sometext',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -298,7 +298,7 @@ sub test_zone {
             {
                 'name'     => 'srvtest1.a',
                 'class'    => 'IN',
-                'ttl'      => '86401',
+                'ttl'      => '1H',
                 'priority' => 11,
                 'weight'   => 22,
                 'port'     => 33,
@@ -308,7 +308,7 @@ sub test_zone {
             {
                 'name'     => 'srvtest2',
                 'class'    => 'IN',
-                'ttl'      => '86401',
+                'ttl'      => '1H',
                 'priority' => 11,
                 'weight'   => 22,
                 'port'     => 33,
@@ -324,7 +324,7 @@ sub test_zone {
         [
             {
                 'name'   => 'borrowed.from.rfc.1876.com.',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'class'  => 'IN',
                 'd1'     => '42',
                 'm1'     => '21',
@@ -342,7 +342,7 @@ sub test_zone {
             },
             {
                 'name'   => 'borrowed2.from.rfc.1876.com.',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'class'  => 'IN',
                 'd1'     => '42',
                 'm1'     => '21',
@@ -360,7 +360,7 @@ sub test_zone {
             },
             {
                 'name'   => 'borrowed3.from.rfc.1876.com.',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'class'  => 'IN',
                 'd1'     => '52',
                 'm1'     => '14',
@@ -378,7 +378,7 @@ sub test_zone {
             },
             {
                 'name'   => 'borrowed4.from.rfc.1876.com.',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'class'  => 'IN',
                 'd1'     => '32',
                 'm1'     => '7',
@@ -396,7 +396,7 @@ sub test_zone {
             },
             {
                 'name'   => 'borrowed5.from.rfc.1876.com.',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'class'  => 'IN',
                 'd1'     => '42',
                 'm1'     => '21',
@@ -414,7 +414,7 @@ sub test_zone {
             },
             {
                 'name'   => 'notborrowed.from.rfc.1876.com.',
-                'ttl'    => '86401',
+                'ttl'    => '1H',
                 'class'  => 'IN',
                 'd1'     => '32',
                 'm1'     => '7',
@@ -440,7 +440,7 @@ sub test_zone {
             {
                 'name'   => 'icarus',
                 'class'  => 'IN',
-                'ttl'    => '43200',
+                'ttl'    => '1H',
                 'cpu'    => 'server',
                 'os'     => 'freebsd',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -457,7 +457,7 @@ sub test_zone {
             {
                 name     => 'commenttest0',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -465,7 +465,7 @@ sub test_zone {
             {
                 name     => 'commenttest1',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -473,7 +473,7 @@ sub test_zone {
             {
                 name     => 'commenttest2',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -481,7 +481,7 @@ sub test_zone {
             {
                 name     => 'commenttest3',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -489,7 +489,7 @@ sub test_zone {
             {
                 name     => 'commenttest4',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -497,7 +497,7 @@ sub test_zone {
             {
                 name     => 'commenttest5',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -505,7 +505,7 @@ sub test_zone {
             {
                 name     => 'commenttest6',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -513,7 +513,7 @@ sub test_zone {
             {
                 name     => 'commenttest7',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -521,7 +521,7 @@ sub test_zone {
             {
                 name     => 'commenttest8',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -529,7 +529,7 @@ sub test_zone {
             {
                 name     => 'commenttest9',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -537,7 +537,7 @@ sub test_zone {
             {
                 name     => 'commenttest10',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -545,7 +545,7 @@ sub test_zone {
             {
                 name     => 'commenttest11',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -553,7 +553,7 @@ sub test_zone {
             {
                 name     => 'commenttest12',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -561,7 +561,7 @@ sub test_zone {
             {
                 name     => 'commenttest13',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -569,7 +569,7 @@ sub test_zone {
             {
                 name     => 'commenttest14',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -577,7 +577,7 @@ sub test_zone {
             {
                 name     => 'commenttest15',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -585,7 +585,7 @@ sub test_zone {
             {
                 name     => 'commenttest16',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'tes;t2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -593,7 +593,7 @@ sub test_zone {
             {
                 name     => 'commenttest17',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'tes;t2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -601,7 +601,7 @@ sub test_zone {
             {
                 name     => 'commenttest18',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'tes;t2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -609,7 +609,7 @@ sub test_zone {
             {
                 name     => 'commenttest19',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'tes;t2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -617,7 +617,7 @@ sub test_zone {
             {
                 name     => 'commenttest20',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'tes;t2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -625,7 +625,7 @@ sub test_zone {
             {
                 name     => 'commenttest21',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'tes;t2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -633,7 +633,7 @@ sub test_zone {
             {
                 name     => 'commenttest22',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'tes;t2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -641,7 +641,7 @@ sub test_zone {
             {
                 name     => 'commenttest23',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'test',
                 os       => 'tes;t2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -649,7 +649,7 @@ sub test_zone {
             {
                 name     => 'commenttest24',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -657,7 +657,7 @@ sub test_zone {
             {
                 name     => 'commenttest25',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -665,7 +665,7 @@ sub test_zone {
             {
                 name     => 'commenttest26',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -673,7 +673,7 @@ sub test_zone {
             {
                 name     => 'commenttest27',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -681,7 +681,7 @@ sub test_zone {
             {
                 name     => 'commenttest28',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -689,7 +689,7 @@ sub test_zone {
             {
                 name     => 'commenttest29',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -697,7 +697,7 @@ sub test_zone {
             {
                 name     => 'commenttest30',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -705,7 +705,7 @@ sub test_zone {
             {
                 name     => 'commenttest31',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'test2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -713,7 +713,7 @@ sub test_zone {
             {
                 name     => 'commenttest32',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'te;st2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -721,7 +721,7 @@ sub test_zone {
             {
                 name     => 'commenttest33',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'te;st2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -729,7 +729,7 @@ sub test_zone {
             {
                 name     => 'commenttest34',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'te;st2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -737,7 +737,7 @@ sub test_zone {
             {
                 name     => 'commenttest35',
                 class    => 'IN',
-                ttl      => '86401',
+                ttl      => '1H',
                 cpu      => 'te;st',
                 os       => 'te;st2',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
@@ -752,7 +752,7 @@ sub test_zone {
         [
             {
                 'rhs' => '10.0.0.$',
-                'ttl' => '43200',
+                'ttl' => '1H',
                 'lhs' => 'www$',
                 'range' => '1-10/1',
                 'type' => 'A',

@@ -23,7 +23,7 @@ my (
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
     %dns_generate,
     %dns_last_name, %dns_last_origin, %dns_last_class, %dns_last_ttl,
-    %dns_found_origins, %unparseable_line_callback, %last_parse_error_count,
+    %dns_dollar_ttl, %dns_found_origins, %unparseable_line_callback, %last_parse_error_count,
 );
 
 my %possibly_quoted = map { $_ => undef } qw/ os cpu text mbox /;
@@ -82,6 +82,7 @@ sub DESTROY {
     delete $dns_last_name{$self};
     delete $dns_last_origin{$self};
     delete $dns_last_ttl{$self};
+    delete $dns_dollar_ttl{$self};
     delete $dns_last_class{$self};
     delete $dns_found_origins{$self};
     delete $unparseable_line_callback{$self};
@@ -371,6 +372,7 @@ sub _initialize {
     $dns_last_name{$self} = undef;
     $dns_last_origin{$self} = undef;
     $dns_last_ttl{$self} = undef;
+    $dns_dollar_ttl{$self} = undef;
     $dns_last_class{$self} = 'IN'; # Class defaults to IN.
     $dns_found_origins{$self} = {};
     $last_parse_error_count{$self} = 0;
@@ -456,6 +458,61 @@ sub _parse {
     my $ttl_cls                = qr/(?:\b((?:$rr_ttl)|(?:$rr_class))\s)?(?:\b((?:$rr_class)|(?:$rr_ttl))\s)?/o;
     my $generate_range         = qr{\d+\-\d+(?:/\d+)?};
     my $last_good_line;
+
+    # Process $INCLUDEs into zone records by reading RRs from file, cleaning
+    # them and letting them be parsed like all other records.
+    if (grep { $_ =~ /\$INCLUDE/ } @$records) {
+        my $inc_data;
+        my @comb;
+                
+        local $/;
+
+        my @inc_directives = grep { $_ =~ /\$INCLUDE/ } @$records;
+        
+        foreach my $inc_direct ( @inc_directives ) {
+                # We have to split $INCLUDE direcives by space unless inside a quoted
+                # string as described in RFC 1035 'character string' so we split
+                # quoted strings and then split unquoted strings by recognition of the
+                # quotes remaining from the first split.
+                #
+                # Empty strings are removed to keep consistent results when
+                # rougue quotes are left in $INCLUDE params.
+                $inc_direct =~ s/\$INCLUDE //;
+
+                my ($inc_f, $inc_domain, $inc_comment) = 
+                    grep { $_ ne '' } map { 
+                        if ($_ !~ /\"/) { split /\s/, $_ } else { $_ =~ s/\"//g; $_; }
+                    } split /\" | \"/, $inc_direct;
+
+                if ( -e $inc_f ) {
+                    open RINCLUDE, "<$inc_f"
+                        or croak qq[DNS::ZoneParse Could not open file specified in \$INCLUDE: "$inc_f"];
+                } else {
+                    croak qq[DNS::ZoneParse \$INCLUDE references missing file: "$inc_f"];
+                }
+
+                $inc_data = <RINCLUDE>;
+                close RINCLUDE;
+    
+                # Set $ORIGINs around included zones if an
+                # include domain is specified setting the adding back
+                # the last origin specified as to not modify the relative
+                # origin of the including zone.
+                if (defined $inc_domain) {
+                        my $last_origin = (grep { $_ =~ /\$ORIGIN/ } @$records)[-1];
+
+                        $inc_data = sprintf( "\$ORIGIN %s\n%s\n%s",
+                                                 $inc_domain, $inc_data, $last_origin );
+                }
+    
+                @$records = (
+                        @$records,
+                        @{ $self->_clean_records( $inc_data ) }
+                );
+        }
+    
+        @$records = grep { $_ !~ /\$INCLUDE/ } @$records;
+    }
 
     foreach ( @$records ) {
         #TRACE( "parsing line <$_>" );
@@ -622,6 +679,7 @@ sub _parse {
                 $dns_soa{$self}->{ttl} = $1;
             }
             $dns_last_ttl{$self} = $1;
+            $dns_dollar_ttl{$self} = $1;
         } elsif (
             /^($valid_name)? \s+
                  $ttl_cls
@@ -882,7 +940,10 @@ sub _massage {
         if ( $record->{'ttl'} ) {
             $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'ttl'} );
         } else {
-            if ( $dns_last_ttl{$self} ) {
+            # Set TTL to $TTL, last TTL or SOA TTL respectively as per RFC 2308
+            if ( $dns_dollar_ttl{$self} ) {
+                $record->{'ttl'} = $dns_dollar_ttl{$self};
+            } elsif ( $dns_last_ttl{$self} ) {
                 $record->{'ttl'} = $dns_last_ttl{$self};
             } else {
                 $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'minimumTTL'} );
@@ -945,10 +1006,14 @@ sub _massage {
         if ( $record->{'ttl'} ) {
             $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'ttl'} );
         } else {
-            if ( !defined $dns_last_ttl{$self} ) {
+            # Set TTL to $TTL, last TTL or SOA TTL respectively as per RFC 2308
+            if ( $dns_dollar_ttl{$self} ) {
+                $record->{'ttl'} = $dns_dollar_ttl{$self};
+            } elsif ( $dns_last_ttl{$self} ) {
+                $record->{'ttl'} = $dns_last_ttl{$self};
+            } else {
                 die "No ttl defined!\n";
             }
-            $record->{'ttl'} = $dns_last_ttl{$self};
         }
     }
 
