@@ -2,7 +2,7 @@ use strict;
 BEGIN { $^W++ }
 use Test::More tests => 61;
 use File::Spec::Functions ':ALL';
-use lib '../lib/';
+use lib 'lib/';
 
 # See if the module compiles - it should...
 require_ok( 'DNS::ZoneParse' );
