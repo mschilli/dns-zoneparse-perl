@@ -501,6 +501,11 @@ sub _parse {
                 if (defined $inc_domain) {
                         my $last_origin = (grep { $_ =~ /\$ORIGIN/ } @$records)[-1];
 
+                        if (! defined $last_origin) {
+                            # Use identified origin if $ORIGIN not present
+                            $last_origin = "\$ORIGIN $origin";
+                        }
+
                         $inc_data = sprintf( "\$ORIGIN %s\n%s\n%s",
                                                  $inc_domain, $inc_data, $last_origin );
                 }
