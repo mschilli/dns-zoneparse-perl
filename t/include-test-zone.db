@@ -19,10 +19,10 @@ ftp                     IN	CNAME	www
 next-rr-will-have-this-name IN  A   127.0.0.1
 
 ; $INCLUDE without relative origin
-$INCLUDE "included-test-zone.db"
+$INCLUDE "t/included-test-zone.db"
 
 ; $INCLUDE with relative origin
-$INCLUDE "included-test-zone.db" dns-zoneparse-test-include.net.
+$INCLUDE "t/included-test-zone.db" dns-zoneparse-test-include.net.
 
 ; $INCLUDE with relative origin and comment
-$INCLUDE "included-test-zone.db" dns-zoneparse-test-include2.net. "Adding those records"
+$INCLUDE "t/included-test-zone.db" dns-zoneparse-test-include2.net. "Adding those records"
