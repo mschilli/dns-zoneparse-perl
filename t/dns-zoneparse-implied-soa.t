@@ -63,7 +63,7 @@ sub test_zone {
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => 'ns1.dns-zoneparse-test.net.',

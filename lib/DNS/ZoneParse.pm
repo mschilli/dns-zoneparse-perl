@@ -24,6 +24,7 @@ my (
     %dns_generate,
     %dns_last_name, %dns_last_origin, %dns_last_class, %dns_last_ttl,
     %dns_dollar_ttl, %dns_found_origins, %unparseable_line_callback, %last_parse_error_count,
+    %alt_ttl_mode
 );
 
 my %possibly_quoted = map { $_ => undef } qw/ os cpu text mbox /;
@@ -33,6 +34,7 @@ sub new {
     my $file = shift;
     my $origin = shift;
     my $unparseable_callback = shift;
+    my $alt_ttl_mode = shift;
     my $self = bless [], $class;
 
     if ( ref $unparseable_callback eq 'CODE' ) {
@@ -40,7 +42,7 @@ sub new {
     }
 
     $self->_initialize();
-    $self->_load_file( $file, $origin ) if $file;
+    $self->_load_file( $file, $origin, $alt_ttl_mode ) if $file;
     return $self;
 }
 
@@ -373,6 +375,7 @@ sub _initialize {
     $dns_last_origin{$self} = undef;
     $dns_last_ttl{$self} = undef;
     $dns_dollar_ttl{$self} = undef;
+    $alt_ttl_mode{$self} = 0;
     $dns_last_class{$self} = 'IN'; # Class defaults to IN.
     $dns_found_origins{$self} = {};
     $last_parse_error_count{$self} = 0;
@@ -380,7 +383,7 @@ sub _initialize {
 }
 
 sub _load_file {
-    my ( $self, $zonefile, $origin ) = @_;
+    my ( $self, $zonefile, $origin, $alt_ttl_mode ) = @_;
     my $zone_contents;
     if ( ref( $zonefile ) eq 'SCALAR' ) {
         $zone_contents = $$zonefile;
@@ -394,14 +397,18 @@ sub _load_file {
             croak qq[DNS::ZoneParse Could not open input file: "$zonefile":$!];
         }
     }
-    if ( $self->_parse( $zonefile, $zone_contents, $origin ) ) { return 1; }
+    if ( $self->_parse( $zonefile, $zone_contents, $origin, $alt_ttl_mode ) ) { return 1; }
 }
 
 sub _parse {
     # Support IsAlnum for unicode names.
     use utf8;
-    my ( $self, $zonefile, $contents, $origin ) = @_;
+    my ( $self, $zonefile, $contents, $origin, $alt_ttl_mode ) = @_;
     $self->_initialize();
+
+    if ( defined $alt_ttl_mode ) {
+        $alt_ttl_mode{$self} = $alt_ttl_mode;
+    }
 
     # Here's how we auto-detect the zonefile and origin. Note, the zonefile is
     # only used to print out a comment in the file, so its okay if we're
@@ -684,7 +691,7 @@ sub _parse {
                 $dns_soa{$self}->{ttl} = $1;
             }
             $dns_last_ttl{$self} = $1;
-            $dns_dollar_ttl{$self} = $1;
+            $dns_dollar_ttl{$self} = $1 if $alt_ttl_mode{$self};
         } elsif (
             /^($valid_name)? \s+
                  $ttl_cls
@@ -945,10 +952,7 @@ sub _massage {
         if ( $record->{'ttl'} ) {
             $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'ttl'} );
         } else {
-            # Set TTL to $TTL, last TTL or SOA TTL respectively as per RFC 2308
-            if ( $dns_dollar_ttl{$self} ) {
-                $record->{'ttl'} = $dns_dollar_ttl{$self};
-            } elsif ( $dns_last_ttl{$self} ) {
+            if ( $dns_last_ttl{$self} ) {
                 $record->{'ttl'} = $dns_last_ttl{$self};
             } else {
                 $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'minimumTTL'} );
@@ -1012,7 +1016,7 @@ sub _massage {
             $record->{'ttl'} = $dns_last_ttl{$self} = uc( $record->{'ttl'} );
         } else {
             # Set TTL to $TTL, last TTL or SOA TTL respectively as per RFC 2308
-            if ( $dns_dollar_ttl{$self} ) {
+            if ( $dns_dollar_ttl{$self} && $alt_ttl_mode{$self} ) {
                 $record->{'ttl'} = $dns_dollar_ttl{$self};
             } elsif ( $dns_last_ttl{$self} ) {
                 $record->{'ttl'} = $dns_last_ttl{$self};

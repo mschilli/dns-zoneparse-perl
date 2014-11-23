@@ -74,56 +74,56 @@ sub test_zone {
         $zf->a,
         [
             {
-                'ttl'   => '1H',
+                'ttl'   => '43200',
                 'name'  => '@',
                 'class' => 'IN',
                 'host'  => '127.0.0.1',
                 'ORIGIN' => 'dns-zoneparse-test.net.'
             },
             {
-                'ttl'   => '1H',
+                'ttl'   => '43200',
                 'name'  => 'next-rr-will-have-this-name',
                 'class' => 'IN',
                 'host'  => '127.0.0.1',
                 'ORIGIN' => 'dns-zoneparse-test.net.'
             },
             {
-                'ttl'   => '1H',
+                'ttl'   => '43200',
                 'name'  => '@',
                 'class' => 'IN',
                 'host'  => '127.0.0.2',
                 'ORIGIN' => 'dns-zoneparse-test.net.'
             },
             {
-                'ttl'   => '1H',
+                'ttl'   => '43200',
                 'name'  => 'next-rr-will-have-this-name2',
                 'class' => 'IN',
                 'host'  => '127.0.0.2',
                 'ORIGIN' => 'dns-zoneparse-test.net.'
             },
             {
-                'ttl'   => '1H',
+                'ttl'   => '43200',
                 'name'  => '@',
                 'class' => 'IN',
                 'host'  => '127.0.0.2',
                 'ORIGIN' => 'dns-zoneparse-test-include.net.'
             },
             {
-                'ttl'   => '1H',
+                'ttl'   => '43200',
                 'name'  => 'next-rr-will-have-this-name2',
                 'class' => 'IN',
                 'host'  => '127.0.0.2',
                 'ORIGIN' => 'dns-zoneparse-test-include.net.'
             },
             {
-                'ttl'   => '1H',
+                'ttl'   => '43200',
                 'name'  => '@',
                 'class' => 'IN',
                 'host'  => '127.0.0.2',
                 'ORIGIN' => 'dns-zoneparse-test-include2.net.'
             },
             {
-                'ttl'   => '1H',
+                'ttl'   => '43200',
                 'name'  => 'next-rr-will-have-this-name2',
                 'class' => 'IN',
                 'host'  => '127.0.0.2',
@@ -144,7 +144,7 @@ sub test_zone {
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => 'ns1.dns-zoneparse-test.net.',
@@ -158,7 +158,7 @@ sub test_zone {
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => 'ns3.dns-zoneparse-test.net.',
@@ -172,7 +172,7 @@ sub test_zone {
                 'ORIGIN' => 'dns-zoneparse-test-include.net.'
             },
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => 'ns3.dns-zoneparse-test.net.',
@@ -186,7 +186,7 @@ sub test_zone {
                 'ORIGIN' => 'dns-zoneparse-test-include2.net.'
             },
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => '@',
                 'class'  => 'IN',
                 'host'   => 'ns3.dns-zoneparse-test.net.',
@@ -202,7 +202,7 @@ sub test_zone {
         [
             {
                 'priority' => '10',
-                'ttl'      => '1H',
+                'ttl'      => '43200',
                 'name'     => '@',
                 'class'    => 'IN',
                 'host'     => 'mail',
@@ -210,7 +210,7 @@ sub test_zone {
             },
             {
                 'priority' => '10',
-                'ttl'      => '1H',
+                'ttl'      => '43200',
                 'name'     => '@',
                 'class'    => 'IN',
                 'host'     => 'mail2',
@@ -218,7 +218,7 @@ sub test_zone {
             },
             {
                 'priority' => '10',
-                'ttl'      => '1H',
+                'ttl'      => '43200',
                 'name'     => '@',
                 'class'    => 'IN',
                 'host'     => 'mail2',
@@ -226,7 +226,7 @@ sub test_zone {
             },
             {
                 'priority' => '10',
-                'ttl'      => '1H',
+                'ttl'      => '43200',
                 'name'     => '@',
                 'class'    => 'IN',
                 'host'     => 'mail2',
@@ -240,28 +240,28 @@ sub test_zone {
         $zf->cname,
         [
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => 'ftp',
                 'class'  => 'IN',
                 'host'   => 'www',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => 'ftp',
                 'class'  => 'IN',
                 'host'   => 'www1',
                 'ORIGIN' => 'dns-zoneparse-test.net.',
             },
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => 'ftp',
                 'class'  => 'IN',
                 'host'   => 'www1',
                 'ORIGIN' => 'dns-zoneparse-test-include.net.',
             },
             {
-                'ttl'    => '1H',
+                'ttl'    => '43200',
                 'name'   => 'ftp',
                 'class'  => 'IN',
                 'host'   => 'www1',

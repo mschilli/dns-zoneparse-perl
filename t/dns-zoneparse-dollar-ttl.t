@@ -16,13 +16,17 @@ sub on_parse_fail {
     }
 }
 
-my $str_zonefile = DNS::ZoneParse->new( \$zone_data, undef, \&on_parse_fail );
+# Specify alternate TTL parsing (using RFC2308 perscribed method of parsing
+# $TTL directives).
+my $alt_ttl_mode = 1;
+
+my $str_zonefile = DNS::ZoneParse->new( \$zone_data, undef, \&on_parse_fail, $alt_ttl_mode );
 ok( $str_zonefile,                                'new obj from string' );
 ok( $str_zonefile->last_parse_error_count() == 0, "caught all errors (none!)" );
 test_zone( $str_zonefile );
 
 my $serialized = $str_zonefile->output();
-$str_zonefile = DNS::ZoneParse->new( \$serialized, undef, \&on_parse_fail );
+$str_zonefile = DNS::ZoneParse->new( \$serialized, undef, \&on_parse_fail, $alt_ttl_mode );
 ok( $str_zonefile,                                'new obj from output' );
 ok( $str_zonefile->last_parse_error_count() == 0, "caught all errors (none!)" );
 test_zone( $str_zonefile );
@@ -40,7 +44,7 @@ sub test_zone {
             'refresh'    => '10801',
             'retry'      => '3600',
             'expire'     => '691200',
-            'ttl'        => '86400',
+            'ttl'        => '3600',
             'primary'    => 'ns0.dns-zoneparse-test.net.',
             'origin'     => '@',
             'email'      => 'support\\.contact.dns-zoneparse-test.net.',
@@ -69,21 +73,21 @@ sub test_zone {
             {
                 'ORIGIN'  => 'dns-zoneparse-test.net.',
                 'class'   => 'IN',
-                'ttl'     => '86400',
+                'ttl'     => '3600',
                 'name'    => '@',
                 'host'    => '127.0.0.1'
             },
             {
                 'ORIGIN'  => 'dns-zoneparse-test.net.',
                 'class'   => 'IN',
-                'ttl'     => '86400',
+                'ttl'     => '3600',
                 'name'    => 'ns1',
                 'host'    => '127.0.0.2'
             },
             {
                 'ORIGIN'  => 'dns-zoneparse-test.net.',
                 'class'   => 'IN',
-                'ttl'     => '10',
+                'ttl'     => '3600',
                 'name'    => 'www',
                 'host'    => '127.0.0.3'
             },
@@ -97,7 +101,7 @@ sub test_zone {
             {
                 'ORIGIN' => 'dns-zoneparse-test.net.',
                 'class'  => 'IN',
-                'ttl'    => '10',
+                'ttl'    => '3600',
                 'name'   => 'ftp',
                 'host'   => 'www'
             },
@@ -109,6 +113,7 @@ sub test_zone {
 
 __DATA__
 $ORIGIN dns-zoneparse-test.net.
+$TTL 3600
 @                           IN	SOA	ns0.dns-zoneparse-test.net.	support\.contact.dns-zoneparse-test.net.	(
                         2000100502   ; serial number
                         10801       ; refresh
