@@ -1,5 +1,5 @@
 ######################################################################
-    DNS::ZoneParse 1.10
+    DNS::ZoneParse 1.11
 ######################################################################
 
 NAME
@@ -91,6 +91,9 @@ DESCRIPTION
 
         TXT records also have a 'text' property representing the record's
         'txt-data' descriptive text.
+
+	SPF records also have a 'spf' property representing the record's
+           'spf-data' descriptive text.
 
         HINFO records also have 'cpu' and 'os' properties.
 
