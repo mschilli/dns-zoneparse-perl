@@ -74,7 +74,8 @@ DESCRIPTION
         If you plan to pass a on_unparseable_line callback but do not wish
         to specify an $origin, pass 'undef' as the $origin parameter.
 
-    a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc()
+    a(), cname(), srv(), mx(), ns(), ptr(), txt(), spf(), hinfo(), rp(),
+    loc()
         These methods return references to the resource records. For
         example:
 
