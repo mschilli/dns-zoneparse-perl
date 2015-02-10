@@ -1,5 +1,9 @@
 Revision history for Perl extension DNS::ZoneParse.
 
+1.11 - (not yet released)
+      - (ms) [rt.cpan.or #100777] Fix by Jonas Keidel for zonefile records
+             starting with 0 like "0 IN CNAME bar.de."
+
 1.10 - Wed Sep 22 2010
       - (je) Add ttl_to_int method.
       - (je) Use the SOA "minimum" field if no other TTL can be found (and be

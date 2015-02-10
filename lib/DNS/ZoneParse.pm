@@ -924,7 +924,7 @@ sub _massage {
         # The silliness continues: only $GENERATE directives have a lhs, and
         # don't need a 'name'.
         if ( !exists $record->{'lhs'} ) {
-            if ( $record->{'name'} ) {
+            if ( defined $record->{'name'} and $record->{'name'} ne '' ) {
                 $dns_last_name{$self} = $record->{'name'};
             } else {
                 #TRACE( "Record has no name, using last name" );
