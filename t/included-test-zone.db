@@ -1,0 +1,11 @@
+;  Database file dns-zoneparse-test.net.dns for dns-zoneparse-test.net zone.
+;      Zone version:  20140929
+; test-zone2.db used for testin $INCLUDE functionality
+$TTL 1H
+        43200          IN	NS	ns2.dns-zoneparse-test.net.
+@                       IN	NS	ns3.dns-zoneparse-test.net.
+
+@                       IN	A	127.0.0.2
+@                       IN	MX	10	mail2
+ftp                     IN	CNAME	www1
+next-rr-will-have-this-name2 IN  A   127.0.0.2

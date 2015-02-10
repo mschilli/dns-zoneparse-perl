@@ -1,0 +1,28 @@
+;  Database file dns-zoneparse-test.net.dns for dns-zoneparse-test.net zone.
+;      Zone version:  2000100502
+$TTL 1H
+@                           IN	SOA	ns0.dns-zoneparse-test.net.	support\.contact.dns-zoneparse-test.net.	(
+                        2000100502   ; serial number
+                        10801       ; refresh
+                        3600        ; retry
+                        691200      ; expire
+                        86400     ) ; minimum TTL
+
+         43200          IN	NS	ns0.dns-zoneparse-test.net.
+@                       IN	NS	ns1.dns-zoneparse-test.net.
+@                       IN	A	127.0.0.1
+@                       IN	MX	10	mail
+ftp                     IN	CNAME	www
+
+; Demonstrates $INCLUDE insertion process which allows records
+; in included file to inherit name and inherit same or different origin.
+next-rr-will-have-this-name IN  A   127.0.0.1
+
+; $INCLUDE without relative origin
+$INCLUDE "t/included-test-zone.db"
+
+; $INCLUDE with relative origin
+$INCLUDE "t/included-test-zone.db" dns-zoneparse-test-include.net.
+
+; $INCLUDE with relative origin and comment
+$INCLUDE "t/included-test-zone.db" dns-zoneparse-test-include2.net. "Adding those records"
