@@ -1,5 +1,5 @@
 ######################################################################
-    DNS::ZoneParse 1.10
+    DNS::ZoneParse 1.11
 ######################################################################
 
 NAME
@@ -74,7 +74,8 @@ DESCRIPTION
         If you plan to pass a on_unparseable_line callback but do not wish
         to specify an $origin, pass 'undef' as the $origin parameter.
 
-    a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc()
+    a(), cname(), srv(), mx(), ns(), ptr(), txt(), spf(), hinfo(), rp(),
+    loc()
         These methods return references to the resource records. For
         example:
 
@@ -91,6 +92,9 @@ DESCRIPTION
 
         TXT records also have a 'text' property representing the record's
         'txt-data' descriptive text.
+
+	SPF records also have a 'spf' property representing the record's
+           'spf-data' descriptive text.
 
         HINFO records also have 'cpu' and 'os' properties.
 
