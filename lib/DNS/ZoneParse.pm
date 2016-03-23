@@ -19,7 +19,7 @@ my $rr_ttl               = qr/(?:\d+[wdhms]?)+/i;
 
 $VERSION = '1.10';
 my (
-    %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
+    %dns_id,  %dns_soa, %dns_ns,  %dns_a, %dns_cname, %dns_dname, %dns_mx, %dns_txt,
     %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
     %dns_generate,
     %dns_last_name, %dns_last_origin, %dns_last_class, %dns_last_ttl,
@@ -69,6 +69,7 @@ sub DESTROY {
     delete $dns_ns{$self};
     delete $dns_a{$self};
     delete $dns_cname{$self};
+    delete $dns_dname{$self};
     delete $dns_mx{$self};
     delete $dns_txt{$self};
     delete $dns_ptr{$self};
@@ -97,6 +98,7 @@ sub AUTOLOAD {
      : $method eq 'ns'       ? $dns_ns{$self}
      : $method eq 'a'        ? $dns_a{$self}
      : $method eq 'cname'    ? $dns_cname{$self}
+     : $method eq 'dname'    ? $dns_dname{$self}
      : $method eq 'mx'       ? $dns_mx{$self}
      : $method eq 'txt'      ? $dns_txt{$self}
      : $method eq 'ptr'      ? $dns_ptr{$self}
@@ -127,6 +129,7 @@ sub dump {
             A     => $dns_a{$self},
             NS    => $dns_ns{$self},
             CNAME => $dns_cname{$self},
+            DNAME => $dns_dname{$self},
             MX    => $dns_mx{$self},
             PTR   => $dns_ptr{$self},
             TXT   => $dns_txt{$self},
@@ -224,6 +227,12 @@ ZONEHEADER2
         next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	CNAME	$o->{host}\n";
+    }
+    foreach my $o ( @{ $dns_dname{$self} } ) {
+        next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
+        $self->_escape_chars( $o );
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	DNAME	$o->{host}\n";
     }
     foreach my $o ( @{ $dns_a4{$self} } ) {
         next unless defined $o;
@@ -359,6 +368,7 @@ sub _initialize {
     $dns_ns{$self}        = [];
     $dns_a{$self}         = [];
     $dns_cname{$self}     = [];
+    $dns_dname{$self}     = [];
     $dns_mx{$self}        = [];
     $dns_txt{$self}       = [];
     $dns_ptr{$self}       = [];
@@ -451,7 +461,7 @@ sub _parse {
     my $valid_quoted_name_char = qr/(?:$valid_name_start_char|[. ;\t()\\])/o;
     my $valid_name             = qr/$valid_name_start_char$valid_name_char*/o;
     my $valid_ip6              = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
-    my $rr_type                = qr/\b(?:NS|A|CNAME)\b/i;
+    my $rr_type                = qr/\b(?:NS|A|CNAME|DNAME)\b/i;
     #my $ttl_cls                = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
     my $ttl_cls                = qr/(?:\b((?:$rr_ttl)|(?:$rr_class))\s)?(?:\b((?:$rr_class)|(?:$rr_ttl))\s)?/o;
     my $generate_range         = qr{\d+\-\d+(?:/\d+)?};
@@ -479,9 +489,10 @@ sub _parse {
         {
             my ( $name, $ttl, $class, $type, $host ) = ( $1, $2, $3, $4, $5 );
             my $dns_thing =
-               uc $type eq 'NS' ? $dns_ns{$self}
-             : uc $type eq 'A'  ? $dns_a{$self}
-             :                    $dns_cname{$self};
+               uc $type eq 'NS'     ? $dns_ns{$self}
+             : uc $type eq 'A'      ? $dns_a{$self}
+             : uc $type eq 'DNAME'  ? $dns_dname{$self}
+             :                        $dns_cname{$self};
             push @$dns_thing,
              $self->_massage( {
                     name  => $name,
