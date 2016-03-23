@@ -74,7 +74,7 @@ DESCRIPTION
         If you plan to pass a on_unparseable_line callback but do not wish
         to specify an $origin, pass 'undef' as the $origin parameter.
 
-    a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc()
+    a(), cname(), dname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc(), sshfp()
         These methods return references to the resource records. For
         example:
 
@@ -98,6 +98,8 @@ DESCRIPTION
 
         LOC records also have 'd1', 'm1', 's1', 'NorS', 'd2', 'm2', 's2',
         'EorW', 'alt', 'siz', 'hp', and 'vp', as per RFC 1876.
+
+        SSHFP records have 'name','ttl','class', 'ORIGIN' and 'algorithm', 'fingerprint_type', 'fingerprint'
 
         If there are no records of a given type in the zone, the call will
         croak with an error message about an invalid method. (This is not an

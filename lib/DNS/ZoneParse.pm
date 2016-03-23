@@ -19,8 +19,8 @@ my $rr_ttl               = qr/(?:\d+[wdhms]?)+/i;
 
 $VERSION = '1.10';
 my (
-    %dns_id,  %dns_soa, %dns_ns,  %dns_a,     %dns_cname, %dns_mx, %dns_txt,
-    %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
+    %dns_id,  %dns_soa, %dns_ns,  %dns_a, %dns_cname, %dns_dname, %dns_mx, %dns_txt,
+    %dns_ptr, %dns_a4,  %dns_srv, %dns_sshfp, %dns_hinfo, %dns_rp,    %dns_loc,
     %dns_generate,
     %dns_last_name, %dns_last_origin, %dns_last_class, %dns_last_ttl,
     %dns_found_origins, %unparseable_line_callback, %last_parse_error_count,
@@ -69,11 +69,13 @@ sub DESTROY {
     delete $dns_ns{$self};
     delete $dns_a{$self};
     delete $dns_cname{$self};
+    delete $dns_dname{$self};
     delete $dns_mx{$self};
     delete $dns_txt{$self};
     delete $dns_ptr{$self};
     delete $dns_a4{$self};
     delete $dns_srv{$self};
+    delete $dns_sshfp{$self};
     delete $dns_hinfo{$self};
     delete $dns_rp{$self};
     delete $dns_loc{$self};
@@ -97,11 +99,13 @@ sub AUTOLOAD {
      : $method eq 'ns'       ? $dns_ns{$self}
      : $method eq 'a'        ? $dns_a{$self}
      : $method eq 'cname'    ? $dns_cname{$self}
+     : $method eq 'dname'    ? $dns_dname{$self}
      : $method eq 'mx'       ? $dns_mx{$self}
      : $method eq 'txt'      ? $dns_txt{$self}
      : $method eq 'ptr'      ? $dns_ptr{$self}
      : $method eq 'aaaa'     ? $dns_a4{$self}
      : $method eq 'srv'      ? $dns_srv{$self}
+     : $method eq 'sshfp'    ? $dns_sshfp{$self}
      : $method eq 'hinfo'    ? $dns_hinfo{$self}
      : $method eq 'rp'       ? $dns_rp{$self}
      : $method eq 'loc'      ? $dns_loc{$self}
@@ -127,10 +131,12 @@ sub dump {
             A     => $dns_a{$self},
             NS    => $dns_ns{$self},
             CNAME => $dns_cname{$self},
+            DNAME => $dns_dname{$self},
             MX    => $dns_mx{$self},
             PTR   => $dns_ptr{$self},
             TXT   => $dns_txt{$self},
             SRV   => $dns_srv{$self},
+            SSHFP => $dns_sshfp{$self},
             HINFO => $dns_hinfo{$self},
             RP    => $dns_rp{$self},
             LOC   => $dns_loc{$self},
@@ -225,6 +231,12 @@ ZONEHEADER2
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	CNAME	$o->{host}\n";
     }
+    foreach my $o ( @{ $dns_dname{$self} } ) {
+        next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
+        $self->_escape_chars( $o );
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	DNAME	$o->{host}\n";
+    }
     foreach my $o ( @{ $dns_a4{$self} } ) {
         next unless defined $o;
         next unless $o->{'ORIGIN'} eq $process_this_origin;
@@ -248,6 +260,12 @@ ZONEHEADER2
         next unless $o->{'ORIGIN'} eq $process_this_origin;
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	SRV	$o->{priority}	$o->{weight}	$o->{port}	$o->{host}\n";
+    }
+    foreach my $o ( @{ $dns_sshfp{$self} } ) {
+        next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
+        $self->_escape_chars( $o );
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	SSHFP	$o->{algorithm}	$o->{fingerprint_type}	$o->{fingerprint}\n";
     }
     foreach my $o ( @{ $dns_hinfo{$self} } ) {
         next unless defined $o;
@@ -359,11 +377,13 @@ sub _initialize {
     $dns_ns{$self}        = [];
     $dns_a{$self}         = [];
     $dns_cname{$self}     = [];
+    $dns_dname{$self}     = [];
     $dns_mx{$self}        = [];
     $dns_txt{$self}       = [];
     $dns_ptr{$self}       = [];
     $dns_a4{$self}        = [];
     $dns_srv{$self}       = [];
+    $dns_sshfp{$self}     = [];
     $dns_hinfo{$self}     = [];
     $dns_rp{$self}        = [];
     $dns_loc{$self}       = [];
@@ -451,7 +471,7 @@ sub _parse {
     my $valid_quoted_name_char = qr/(?:$valid_name_start_char|[. ;\t()\\])/o;
     my $valid_name             = qr/$valid_name_start_char$valid_name_char*/o;
     my $valid_ip6              = qr/[\@a-zA-Z_\-\.0-9\*:]+/;
-    my $rr_type                = qr/\b(?:NS|A|CNAME)\b/i;
+    my $rr_type                = qr/\b(?:NS|A|CNAME|DNAME)\b/i;
     #my $ttl_cls                = qr/(?:($rr_ttl)\s)?(?:($rr_class)\s)?/o;
     my $ttl_cls                = qr/(?:\b((?:$rr_ttl)|(?:$rr_class))\s)?(?:\b((?:$rr_class)|(?:$rr_ttl))\s)?/o;
     my $generate_range         = qr{\d+\-\d+(?:/\d+)?};
@@ -479,9 +499,10 @@ sub _parse {
         {
             my ( $name, $ttl, $class, $type, $host ) = ( $1, $2, $3, $4, $5 );
             my $dns_thing =
-               uc $type eq 'NS' ? $dns_ns{$self}
-             : uc $type eq 'A'  ? $dns_a{$self}
-             :                    $dns_cname{$self};
+               uc $type eq 'NS'     ? $dns_ns{$self}
+             : uc $type eq 'A'      ? $dns_a{$self}
+             : uc $type eq 'DNAME'  ? $dns_dname{$self}
+             :                        $dns_cname{$self};
             push @$dns_thing,
              $self->_massage( {
                     name  => $name,
@@ -547,6 +568,28 @@ sub _parse {
                     ttl      => $ttl,
                     class    => $class,
              } );
+         } elsif (
+            /^($valid_name)? \s+
+                 $ttl_cls
+                 \SSHFP \s+
+                 (\d+) \s+
+                 (\d+) \s+
+                ("$valid_quoted_txt_char*(?<!\\)"|$valid_txt_char+)
+               /ixo
+                #("$valid_quoted_txt_char*(?<!\\)"|$valid_txt_char+)
+          )
+         {
+             # host ttl class algorithm fingerprint_type  fingerprint
+             my ( $name, $ttl, $class, $algorithm, $fingerprint_type, $fingerprint ) = ( $1, $2, $3, $4, $5, $6 );
+             push @{ $dns_sshfp{$self} },
+              $self->_massage( {
+                     name                => $name,
+                     algorithm           => $algorithm,
+                     fingerprint_type    => $fingerprint_type,
+                     fingerprint         => $fingerprint,
+                     ttl      => $ttl,
+                     class    => $class,
+              } );
         } elsif (
             /^($valid_name) \s+
                  $ttl_cls
@@ -1051,7 +1094,7 @@ how errors are handled when parsing zone files.
 If you plan to pass a on_unparseable_line callback but do not wish to specify
 an C<$origin>, pass 'undef' as the C<$origin> parameter.
 
-=item a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc()
+=item a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc(), dname(), sshfp()
 
 These methods return references to the resource records. For example:
 
@@ -1059,7 +1102,7 @@ These methods return references to the resource records. For example:
 
 Returns the mx records in an array reference.
 
-All records (except SOA) have the following properties: 'ttl', 'class',
+All records (except SOA and SSHFP) have the following properties: 'ttl', 'class',
 'host', 'name', 'ORIGIN'.
 
 MX records also have a 'priority' property.
@@ -1075,6 +1118,8 @@ RP records also have 'mbox' and 'text' properties.
 
 LOC records also have 'd1', 'm1', 's1', 'NorS', 'd2', 'm2', 's2', 'EorW',
 'alt', 'siz', 'hp', and 'vp', as per RFC 1876.
+
+SSHFP records have 'name','ttl','class', 'ORIGIN' and 'algorithm', 'fingerprint_type', 'fingerprint'
 
 If there are no records of a given type in the zone, the call will croak with
 an error message about an invalid method. (This is not an ideal behavior, but

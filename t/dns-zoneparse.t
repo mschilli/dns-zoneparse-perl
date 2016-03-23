@@ -1,6 +1,6 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 61;
+use Test::More tests => 67;
 use File::Spec::Functions ':ALL';
 use lib '../lib/';
 
@@ -205,6 +205,36 @@ sub test_zone {
             },
         ],
         'CNAME records parsed OK',
+    );
+
+    is_deeply(
+        $zf->dname,
+        [
+            {
+                'ttl'    => '43200',
+                'name'   => 'dname-test',
+                'class'  => 'IN',
+                'host'   => 'dns-zoneparse-test.net.',
+                'ORIGIN' => 'dns-zoneparse-test.net.',
+            },
+        ],
+        'DNAME records parsed OK',
+    );
+
+    is_deeply(
+        $zf->sshfp,
+        [
+            {
+                'ttl'               => '43200',
+                'name'              => 'sshfp-test',
+                'class'             => 'IN',
+                'ORIGIN'            => 'dns-zoneparse-test.net.',
+                'algorithm'         => 2,
+                'fingerprint_type'  => 1,
+                'fingerprint'       => "123456789abcdef67890123456789abcdef67890",
+            },
+        ],
+        'SSHFP records parsed OK',
     );
 
     is_deeply(

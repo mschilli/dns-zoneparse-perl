@@ -14,6 +14,8 @@ $TTL 1H
 @                       IN	A	127.0.0.1
 @                       IN	MX	10	mail
 ftp                     IN	CNAME	www
+dname-test              IN  DNAME   dns-zoneparse-test.net.
+sshfp-test              IN  SSHFP   2 1 123456789abcdef67890123456789abcdef67890
 localhost               IN	A	127.0.0.1
 mail                    IN	A	127.0.0.1
 www                     IN	A	127.0.0.1
