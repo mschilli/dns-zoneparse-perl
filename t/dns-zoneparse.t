@@ -1,6 +1,6 @@
 use strict;
 BEGIN { $^W++ }
-use Test::More tests => 61;
+use Test::More tests => 64;
 use File::Spec::Functions ':ALL';
 use lib '../lib/';
 
@@ -205,6 +205,20 @@ sub test_zone {
             },
         ],
         'CNAME records parsed OK',
+    );
+
+    is_deeply(
+        $zf->dname,
+        [
+            {
+                'ttl'    => '43200',
+                'name'   => 'dname-test',
+                'class'  => 'IN',
+                'host'   => 'dns-zoneparse-test.net.',
+                'ORIGIN' => 'dns-zoneparse-test.net.',
+            },
+        ],
+        'DNAME records parsed OK',
     );
 
     is_deeply(
