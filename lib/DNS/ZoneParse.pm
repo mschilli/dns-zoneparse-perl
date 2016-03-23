@@ -20,7 +20,7 @@ my $rr_ttl               = qr/(?:\d+[wdhms]?)+/i;
 $VERSION = '1.10';
 my (
     %dns_id,  %dns_soa, %dns_ns,  %dns_a, %dns_cname, %dns_dname, %dns_mx, %dns_txt,
-    %dns_ptr, %dns_a4,  %dns_srv, %dns_hinfo, %dns_rp,    %dns_loc,
+    %dns_ptr, %dns_a4,  %dns_srv, %dns_sshfp, %dns_hinfo, %dns_rp,    %dns_loc,
     %dns_generate,
     %dns_last_name, %dns_last_origin, %dns_last_class, %dns_last_ttl,
     %dns_found_origins, %unparseable_line_callback, %last_parse_error_count,
@@ -75,6 +75,7 @@ sub DESTROY {
     delete $dns_ptr{$self};
     delete $dns_a4{$self};
     delete $dns_srv{$self};
+    delete $dns_sshfp{$self};
     delete $dns_hinfo{$self};
     delete $dns_rp{$self};
     delete $dns_loc{$self};
@@ -104,6 +105,7 @@ sub AUTOLOAD {
      : $method eq 'ptr'      ? $dns_ptr{$self}
      : $method eq 'aaaa'     ? $dns_a4{$self}
      : $method eq 'srv'      ? $dns_srv{$self}
+     : $method eq 'sshfp'    ? $dns_sshfp{$self}
      : $method eq 'hinfo'    ? $dns_hinfo{$self}
      : $method eq 'rp'       ? $dns_rp{$self}
      : $method eq 'loc'      ? $dns_loc{$self}
@@ -134,6 +136,7 @@ sub dump {
             PTR   => $dns_ptr{$self},
             TXT   => $dns_txt{$self},
             SRV   => $dns_srv{$self},
+            SSHFP => $dns_sshfp{$self},
             HINFO => $dns_hinfo{$self},
             RP    => $dns_rp{$self},
             LOC   => $dns_loc{$self},
@@ -258,6 +261,12 @@ ZONEHEADER2
         $self->_escape_chars( $o );
         $output .= "$o->{name}	$o->{ttl}	$o->{class}	SRV	$o->{priority}	$o->{weight}	$o->{port}	$o->{host}\n";
     }
+    foreach my $o ( @{ $dns_sshfp{$self} } ) {
+        next unless defined $o;
+        next unless $o->{'ORIGIN'} eq $process_this_origin;
+        $self->_escape_chars( $o );
+        $output .= "$o->{name}	$o->{ttl}	$o->{class}	SSHFP	$o->{algorithm}	$o->{fingerprint_type}	$o->{fingerprint}\n";
+    }
     foreach my $o ( @{ $dns_hinfo{$self} } ) {
         next unless defined $o;
         next unless $o->{'ORIGIN'} eq $process_this_origin;
@@ -374,6 +383,7 @@ sub _initialize {
     $dns_ptr{$self}       = [];
     $dns_a4{$self}        = [];
     $dns_srv{$self}       = [];
+    $dns_sshfp{$self}     = [];
     $dns_hinfo{$self}     = [];
     $dns_rp{$self}        = [];
     $dns_loc{$self}       = [];
@@ -558,6 +568,28 @@ sub _parse {
                     ttl      => $ttl,
                     class    => $class,
              } );
+         } elsif (
+            /^($valid_name)? \s+
+                 $ttl_cls
+                 \SSHFP \s+
+                 (\d+) \s+
+                 (\d+) \s+
+                ("$valid_quoted_txt_char*(?<!\\)"|$valid_txt_char+)
+               /ixo
+                #("$valid_quoted_txt_char*(?<!\\)"|$valid_txt_char+)
+          )
+         {
+             # host ttl class algorithm fingerprint_type  fingerprint
+             my ( $name, $ttl, $class, $algorithm, $fingerprint_type, $fingerprint ) = ( $1, $2, $3, $4, $5, $6 );
+             push @{ $dns_sshfp{$self} },
+              $self->_massage( {
+                     name                => $name,
+                     algorithm           => $algorithm,
+                     fingerprint_type    => $fingerprint_type,
+                     fingerprint         => $fingerprint,
+                     ttl      => $ttl,
+                     class    => $class,
+              } );
         } elsif (
             /^($valid_name) \s+
                  $ttl_cls
@@ -1062,7 +1094,7 @@ how errors are handled when parsing zone files.
 If you plan to pass a on_unparseable_line callback but do not wish to specify
 an C<$origin>, pass 'undef' as the C<$origin> parameter.
 
-=item a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc()
+=item a(), cname(), srv(), mx(), ns(), ptr(), txt(), hinfo(), rp(), loc(), dname(), sshfp()
 
 These methods return references to the resource records. For example:
 
@@ -1070,7 +1102,7 @@ These methods return references to the resource records. For example:
 
 Returns the mx records in an array reference.
 
-All records (except SOA) have the following properties: 'ttl', 'class',
+All records (except SOA and SSHFP) have the following properties: 'ttl', 'class',
 'host', 'name', 'ORIGIN'.
 
 MX records also have a 'priority' property.
@@ -1086,6 +1118,8 @@ RP records also have 'mbox' and 'text' properties.
 
 LOC records also have 'd1', 'm1', 's1', 'NorS', 'd2', 'm2', 's2', 'EorW',
 'alt', 'siz', 'hp', and 'vp', as per RFC 1876.
+
+SSHFP records have 'name','ttl','class', 'ORIGIN' and 'algorithm', 'fingerprint_type', 'fingerprint'
 
 If there are no records of a given type in the zone, the call will croak with
 an error message about an invalid method. (This is not an ideal behavior, but
